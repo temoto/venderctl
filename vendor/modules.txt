@@ -1,0 +1,72 @@
+# github.com/256dpi/gomqtt v0.12.2
+github.com/256dpi/gomqtt/client
+github.com/256dpi/gomqtt/packet
+github.com/256dpi/gomqtt/transport
+github.com/256dpi/gomqtt/client/future
+github.com/256dpi/gomqtt/session
+github.com/256dpi/gomqtt/topic
+# github.com/256dpi/mercury v0.1.0
+github.com/256dpi/mercury
+# github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f
+github.com/coreos/go-systemd/daemon
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
+# github.com/eclipse/paho.mqtt.golang v1.2.0
+github.com/eclipse/paho.mqtt.golang
+github.com/eclipse/paho.mqtt.golang/packets
+# github.com/golang/protobuf v1.3.1
+github.com/golang/protobuf/proto
+# github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db
+github.com/golang/snappy
+# github.com/gorilla/websocket v1.3.0
+github.com/gorilla/websocket
+# github.com/hashicorp/hcl v1.0.0
+github.com/hashicorp/hcl
+github.com/hashicorp/hcl/hcl/ast
+github.com/hashicorp/hcl/hcl/parser
+github.com/hashicorp/hcl/hcl/token
+github.com/hashicorp/hcl/json/parser
+github.com/hashicorp/hcl/hcl/scanner
+github.com/hashicorp/hcl/hcl/strconv
+github.com/hashicorp/hcl/json/scanner
+github.com/hashicorp/hcl/json/token
+# github.com/jpillora/backoff v0.0.0-20170918002102-8eab2debe79d
+github.com/jpillora/backoff
+# github.com/juju/errors v0.0.0-20190806202954-0232dcc7464d
+github.com/juju/errors
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/stretchr/testify v1.3.0
+github.com/stretchr/testify/assert
+# github.com/syndtr/goleveldb v1.0.0
+github.com/syndtr/goleveldb/leveldb
+github.com/syndtr/goleveldb/leveldb/errors
+github.com/syndtr/goleveldb/leveldb/opt
+github.com/syndtr/goleveldb/leveldb/storage
+github.com/syndtr/goleveldb/leveldb/util
+github.com/syndtr/goleveldb/leveldb/cache
+github.com/syndtr/goleveldb/leveldb/comparer
+github.com/syndtr/goleveldb/leveldb/filter
+github.com/syndtr/goleveldb/leveldb/iterator
+github.com/syndtr/goleveldb/leveldb/journal
+github.com/syndtr/goleveldb/leveldb/memdb
+github.com/syndtr/goleveldb/leveldb/table
+# github.com/temoto/alive v1.1.0
+github.com/temoto/alive
+# github.com/temoto/errors v0.0.0-20190624114038-cc113d523821
+github.com/temoto/errors
+# github.com/temoto/spq v0.9.0
+github.com/temoto/spq
+# github.com/temoto/vender v0.0.0-20190730192213-185a1390d9de
+github.com/temoto/vender/log2
+github.com/temoto/vender/head/tele
+github.com/temoto/vender/currency
+github.com/temoto/vender/helpers
+github.com/temoto/vender/head/tele/config
+# golang.org/x/net v0.0.0-20190311183353-d8887717615a
+golang.org/x/net/proxy
+golang.org/x/net/websocket
+golang.org/x/net/context
+golang.org/x/net/internal/socks
+# gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
+gopkg.in/tomb.v2

@@ -17,6 +17,7 @@
 .DS_Store
 /.tags*
 /build
+/venderctl
 _cgo_defun.c
 _cgo_export.*
 _cgo_gotypes.go
