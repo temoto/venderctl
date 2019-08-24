@@ -1,0 +1,7 @@
+[
+  {
+    "srcDir": "sql",
+    "files": "**/*.sql",
+    "command": "script/sql-fmt ${srcFile}"
+  }
+]

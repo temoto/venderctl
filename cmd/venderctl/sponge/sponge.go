@@ -4,6 +4,7 @@ package sponge
 import (
 	"context"
 	"flag"
+	"time"
 
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/juju/errors"
@@ -31,13 +32,15 @@ func Main(ctx context.Context, flags *flag.FlagSet) error {
 	g.Log.Debugf("sponge init complete")
 
 	app := &app{g: g}
+	if _, err := g.DB.Exec(`select 1`); err != nil {
+		g.Log.Fatal(err)
+	}
 	return app.loop(ctx)
 }
 
 // runtime irrelevant in Global
 type app struct {
-	g  *state.Global
-	db string
+	g *state.Global
 }
 
 func (app *app) loop(ctx context.Context) error {
@@ -86,7 +89,11 @@ func (app *app) onPacket(ctx context.Context, p tele.Packet) error {
 
 func (app *app) onState(ctx context.Context, vmid int32, state tele_types.State) error {
 	app.g.Log.Infof("vm=%d state=%s", vmid, state.String())
-	return nil
+
+	_, err := app.g.DB.Exec(`insert into state (vmid,state,received)
+values (?0,?1,?2)
+on conflict (vmid) do update set state=excluded.state, received=excluded.received`, vmid, state, time.Now())
+	return err
 }
 
 func (app *app) onTelemetry(ctx context.Context, vmid int32, t *tele_types.Telemetry) error {

@@ -1,0 +1,10 @@
+#!/bin/bash
+set -eu
+base="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+files=${1-./sql/*.sql}
+
+for f in $files ; do
+  tmp="$f.tmp"
+  pg_format --output="$tmp" "$f"
+  mv "$tmp" "$f"
+done
