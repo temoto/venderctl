@@ -20,7 +20,7 @@ type Global struct {
 
 const contextKey = "run/state-global"
 
-func NewContext(log *log2.Log) (context.Context, *Global) {
+func NewContext(tag string, log *log2.Log) (context.Context, *Global) {
 	if log == nil {
 		panic("code error state.NewContext() log=nil")
 	}

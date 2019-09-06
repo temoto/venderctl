@@ -54,7 +54,7 @@ include "money-scale-7" {}`,
 		return func(t *testing.T) {
 			// log := log2.NewStderr(log2.LDebug) // helps with panics
 			log := log2.NewTest(t, log2.LDebug)
-			ctx, g := NewContext(log)
+			ctx, g := NewContext("test", log)
 			fs := NewMockFullReader(map[string]string{
 				"test-inline":   c.input,
 				"empty":         "",

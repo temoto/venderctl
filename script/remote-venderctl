@@ -13,4 +13,4 @@ go test "${test_flag[@]}" ./... >/dev/null || go test -v "${test_flag[@]}" ./...
 GOARCH=amd64 GOOS=linux go build -o $base/$target $gopkg
 rsync -a $base/$target $base/venderctl.hcl $remote:~/
 cmd=${1:-} ; shift
-ssh -t $remote time \~/$name "$cmd" -config=venderctl.hcl "$@"
+ssh -t $remote time \~/$name -config=venderctl.hcl "$cmd" "$@"

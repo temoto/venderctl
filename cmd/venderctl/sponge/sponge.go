@@ -1,25 +1,33 @@
+// Sponge job is to listen network for incoming telemetry and save into database.
 package sponge
 
 import (
 	"context"
+	"flag"
 
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/juju/errors"
 	tele_types "github.com/temoto/vender/head/tele"
+	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
-	"github.com/temoto/venderctl/internal/subcmd"
 	"github.com/temoto/venderctl/internal/tele"
 )
 
-var Mod = subcmd.Mod{Name: "sponge", Main: Main}
+var Cmd = cli.Cmd{
+	Name:   "sponge",
+	Desc:   "telemetry network -> save to database",
+	Action: Main,
+}
 
-func Main(ctx context.Context, config *state.Config) error {
+func Main(ctx context.Context, flags *flag.FlagSet) error {
 	g := state.GetGlobal(ctx)
+	configPath := flags.Lookup("config").Value.String()
+	config := state.MustReadConfig(g.Log, state.NewOsFullReader(), configPath)
 	config.Tele.Enable = true
 	g.MustInit(ctx, config)
 	g.Log.Debugf("config=%+v", g.Config)
 
-	subcmd.SdNotify(daemon.SdNotifyReady)
+	cli.SdNotify(daemon.SdNotifyReady)
 	g.Log.Debugf("sponge init complete")
 
 	app := &app{g: g}
