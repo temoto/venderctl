@@ -12,4 +12,6 @@ type Config struct { //nolint:maligned
 	NetworkTimeoutSec int    `hcl:"network_timeout_sec"`
 	TlsCaFile         string `hcl:"tls_ca_file"`
 	TlsPsk            string `hcl:"tls_psk"` // secret
+
+	MqttSubscribe []string
 }

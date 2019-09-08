@@ -336,6 +336,7 @@ func (c *Client) receivePublish(publish *packet.Publish) {
 	if publish.Message.QOS <= packet.QOSAtLeastOnce {
 		err := c.Config.OnMessage(&publish.Message)
 		if err != nil {
+			c.Log.Errorf("mqtt onMessage topic=%s payload=%x err=%v", publish.Message.Topic, publish.Message.Payload, err)
 			c.disconnect(err)
 			return
 		}

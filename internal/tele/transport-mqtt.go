@@ -51,6 +51,10 @@ func (self *transportMqtt) Init(ctx context.Context, log *log2.Log, teleConfig t
 	if teleConfig.KeepaliveSec == 0 {
 		teleConfig.KeepaliveSec = int(networkTimeout / time.Second)
 	}
+	subs := make([]packet.Subscription, len(teleConfig.MqttSubscribe))
+	for i, pattern := range teleConfig.MqttSubscribe {
+		subs[i] = packet.Subscription{Topic: pattern, QOS: packet.QOSAtLeastOnce}
+	}
 
 	if _, err := url.ParseRequestURI(teleConfig.MqttBroker); err != nil {
 		return errors.Annotatef(err, "mqtt dial broker=%s", teleConfig.MqttBroker)
@@ -73,9 +77,7 @@ func (self *transportMqtt) Init(ctx context.Context, log *log2.Log, teleConfig t
 	self.m.Config.NetworkTimeout = networkTimeout
 	self.m.Config.OnMessage = self.onMessage
 	self.m.Config.Password = teleConfig.MqttPassword
-	self.m.Config.Subscriptions = []packet.Subscription{
-		{Topic: "+/w/+", QOS: packet.QOSAtLeastOnce},
-	}
+	self.m.Config.Subscriptions = subs
 	self.m.Config.TLS = tlsconf
 	return self.m.Init()
 }

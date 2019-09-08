@@ -25,6 +25,7 @@ func Main(ctx context.Context, flags *flag.FlagSet) error {
 	configPath := flags.Lookup("config").Value.String()
 	config := state.MustReadConfig(g.Log, state.NewOsFullReader(), configPath)
 	config.Tele.Enable = true
+	config.Tele.MqttSubscribe = []string{"+/w/+"}
 	g.MustInit(ctx, config)
 	g.Log.Debugf("config=%+v", g.Config)
 
