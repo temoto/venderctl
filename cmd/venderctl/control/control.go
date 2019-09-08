@@ -7,14 +7,18 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/juju/errors"
+	tele_api "github.com/temoto/vender/head/tele/api"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
 )
 
-const cmdUsage = "{MACHINE-ID | all} {report | ping | set-inventory | get-config | set-config | exec SCENARIO | lock DURATION}"
+const replyTimeout = 51 * time.Second
+
+const cmdUsage = "MACHINE-ID {report | ping | set-inventory | get-config | set-config | exec SCENARIO... | lock DURATION}"
 
 var Cmd = cli.Cmd{
 	Name:   "control",
@@ -26,7 +30,6 @@ var Cmd = cli.Cmd{
 func Main(ctx context.Context, flags *flag.FlagSet) error {
 	const argOffset = 1 // Arg(0)=.Name
 	var targetId int32
-	targetAll := false
 	target := flags.Arg(argOffset)
 	cmd := flags.Arg(argOffset + 1)
 	g := state.GetGlobal(ctx)
@@ -34,6 +37,11 @@ func Main(ctx context.Context, flags *flag.FlagSet) error {
 	if target == "" {
 		flags.Usage()
 		os.Exit(1)
+	}
+	if x, err := strconv.ParseInt(target, 10, 32); err != nil {
+		return errors.Annotatef(err, "invalid target=%s", target)
+	} else {
+		targetId = int32(x)
 	}
 
 	configPath := flags.Lookup("config").Value.String()
@@ -43,28 +51,13 @@ func Main(ctx context.Context, flags *flag.FlagSet) error {
 	g.MustInit(ctx, config)
 	g.Log.Debugf("config=%+v", g.Config)
 
-	switch target {
-	case "all":
-		targetAll = true
-
-	default:
-		if x, err := strconv.ParseInt(target, 10, 32); err != nil {
-			return errors.Annotatef(err, "invalid target=%s", target)
-		} else {
-			targetId = int32(x)
-		}
-	}
-	if targetId == 0 && !targetAll {
-		return fmt.Errorf("invalid target=%s", target)
-	}
 	switch cmd {
 	case "report":
-		log.Fatal("TODO send cmd=report, show response")
-		return nil
-
-	case "ping":
-		log.Fatal("TODO send cmd=ping, show response")
-		return nil
+		cmd := &tele_api.Command{
+			Task: &tele_api.Command_Report{Report: &tele_api.Command_ArgReport{}},
+		}
+		_, err := g.Tele.CommandTx(targetId, cmd, replyTimeout)
+		return err
 
 	case "set-inventory":
 		log.Fatal("TODO send set-inventory, show response")
@@ -79,23 +72,18 @@ func Main(ctx context.Context, flags *flag.FlagSet) error {
 		return nil
 
 	case "exec":
-		scenario := flags.Arg(argOffset + 2)
-		log.Fatalf("TODO send cmd=exec(%s), show response", scenario)
-		return nil
+		scenario := strings.Join(flags.Args()[argOffset+2:], " ")
+		cmd := &tele_api.Command{
+			Task: &tele_api.Command_Exec{Exec: &tele_api.Command_ArgExec{Scenario: scenario}},
+		}
+		_, err := g.Tele.CommandTx(targetId, cmd, replyTimeout)
+		return err
 
 	case "lock":
 		durationString := flags.Arg(argOffset + 2)
 		duration, err := time.ParseDuration(durationString)
 		if err != nil {
 			return errors.Annotatef(err, "invalid lock duration=%s", durationString)
-		}
-		if targetAll {
-			g.Log.Infof("===============================================")
-			g.Log.Infof("| WARNING! You are going to lock all machines |")
-			g.Log.Infof("===============================================")
-			safeDelay := 5 * time.Second
-			g.Log.Infof("Press Control-C within %v to cancel", safeDelay)
-			time.Sleep(safeDelay)
 		}
 		log.Fatalf("TODO send cmd=lock(%v), show response", duration)
 		return nil

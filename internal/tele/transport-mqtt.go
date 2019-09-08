@@ -116,33 +116,14 @@ func (self *transportMqtt) Send(p Packet) error {
 	return err
 }
 
-var reTopic = regexp.MustCompile(`^vm(-?\d+)/\w+/(.+)$`)
-
 func (self *transportMqtt) onMessage(msg *packet.Message) error {
 	self.alive.Add(1)
 	defer self.alive.Done()
-	self.log.Debugf("mqtt msg=%v", msg)
-	// parseTopic vm13/w/1s
-	parts := reTopic.FindStringSubmatch(msg.Topic)
-	if len(parts) != 3 {
-		return errors.Errorf("invalid topic=%s", msg.Topic)
+	packet, err := parsePacket(msg)
+	if err != nil {
+		return errors.Annotatef(err, "msg=%v", msg)
 	}
-
-	packet := Packet{Payload: msg.Payload}
-
-	if x, err := strconv.ParseInt(parts[1], 10, 32); err != nil {
-		return errors.Annotatef(err, "invalid topic=%s", msg.Topic)
-	} else {
-		packet.VmId = int32(x)
-	}
-	switch parts[2] {
-	case "1s":
-		packet.Kind = PacketState
-	case "1t":
-		packet.Kind = PacketTelemetry
-	default:
-		return errors.Errorf("invalid topic=%s", msg.Topic)
-	}
+	self.log.Debugf("mqtt packet=%s", packet.String())
 
 	for {
 		t := time.NewTimer(time.Second)
@@ -150,8 +131,37 @@ func (self *transportMqtt) onMessage(msg *packet.Message) error {
 		case self.pch <- packet:
 			t.Stop()
 			return nil
+
 		case <-t.C:
 			self.log.Errorf("CRITICAL mqtt receive chan full")
 		}
 	}
+}
+
+var reTopic = regexp.MustCompile(`^vm(-?\d+)/(\w+)/(.+)$`)
+
+func parsePacket(msg *packet.Message) (Packet, error) {
+	packet := Packet{Payload: msg.Payload}
+	// parseTopic vm13/w/1s
+	parts := reTopic.FindStringSubmatch(msg.Topic)
+	if len(parts) != 4 {
+		return packet, errors.Errorf("invalid topic=%s parts=%q", msg.Topic, parts)
+	}
+
+	if x, err := strconv.ParseInt(parts[1], 10, 32); err != nil {
+		return packet, errors.Annotatef(err, "invalid topic=%s parts=%q", msg.Topic, parts)
+	} else {
+		packet.VmId = int32(x)
+	}
+	switch {
+	case parts[2] == "cr":
+		packet.Kind = PacketCommandReply
+	case parts[3] == "1s":
+		packet.Kind = PacketState
+	case parts[3] == "1t":
+		packet.Kind = PacketTelemetry
+	default:
+		return packet, errors.Errorf("invalid topic=%s parts=%q", msg.Topic, parts)
+	}
+	return packet, nil
 }

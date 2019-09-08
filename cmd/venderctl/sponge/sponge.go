@@ -8,7 +8,7 @@ import (
 
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/juju/errors"
-	tele_types "github.com/temoto/vender/head/tele"
+	tele_api "github.com/temoto/vender/head/tele/api"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
 	"github.com/temoto/venderctl/internal/tele"
@@ -88,7 +88,7 @@ func (app *app) onPacket(ctx context.Context, p tele.Packet) error {
 	}
 }
 
-func (app *app) onState(ctx context.Context, vmid int32, state tele_types.State) error {
+func (app *app) onState(ctx context.Context, vmid int32, state tele_api.State) error {
 	app.g.Log.Infof("vm=%d state=%s", vmid, state.String())
 
 	_, err := app.g.DB.Exec(`insert into state (vmid,state,received)
@@ -97,7 +97,7 @@ on conflict (vmid) do update set state=excluded.state, received=excluded.receive
 	return err
 }
 
-func (app *app) onTelemetry(ctx context.Context, vmid int32, t *tele_types.Telemetry) error {
+func (app *app) onTelemetry(ctx context.Context, vmid int32, t *tele_api.Telemetry) error {
 	app.g.Log.Infof("vm=%d telemetry=%s", vmid, t.String())
 	return nil
 }
