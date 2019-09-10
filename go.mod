@@ -12,6 +12,6 @@ require (
 	github.com/juju/errors v0.0.0-20190806202954-0232dcc7464d
 	github.com/stretchr/testify v1.3.0
 	github.com/temoto/alive v1.1.0
-	github.com/temoto/vender v0.0.0-20190908194935-1aa35541018c
+	github.com/temoto/vender v0.0.0-20190910204225-900a6ed95b39
 	mellium.im/sasl v0.2.1 // indirect
 )

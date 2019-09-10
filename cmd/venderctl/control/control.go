@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -60,7 +59,7 @@ func Main(ctx context.Context, flags *flag.FlagSet) error {
 		return err
 
 	case "set-inventory":
-		log.Fatal("TODO send set-inventory, show response")
+		g.Log.Fatal("TODO send set-inventory, show response")
 		return nil
 
 	case "get-config":
@@ -74,7 +73,10 @@ func Main(ctx context.Context, flags *flag.FlagSet) error {
 	case "exec":
 		scenario := strings.Join(flags.Args()[argOffset+2:], " ")
 		cmd := &tele_api.Command{
-			Task: &tele_api.Command_Exec{Exec: &tele_api.Command_ArgExec{Scenario: scenario}},
+			Task: &tele_api.Command_Exec{Exec: &tele_api.Command_ArgExec{
+				Scenario: scenario,
+				Lock:     true,
+			}},
 		}
 		_, err := g.Tele.CommandTx(targetId, cmd, replyTimeout)
 		return err
@@ -85,8 +87,19 @@ func Main(ctx context.Context, flags *flag.FlagSet) error {
 		if err != nil {
 			return errors.Annotatef(err, "invalid lock duration=%s", durationString)
 		}
-		log.Fatalf("TODO send cmd=lock(%v), show response", duration)
-		return nil
+		if duration < time.Second {
+			return errors.Annotatef(err, "invalid lock duration=%v must be >= 1s", duration)
+		}
+		sec := int32(duration / time.Second)
+		if time.Duration(sec)*time.Second != duration {
+			sec++
+		}
+		g.Log.Infof("duration=%v rounded up to %d seconds", duration, sec)
+		cmd := &tele_api.Command{
+			Task: &tele_api.Command_Lock{Lock: &tele_api.Command_ArgLock{Duration: sec}},
+		}
+		_, err = g.Tele.CommandTx(targetId, cmd, replyTimeout+duration)
+		return err
 
 	default:
 		return fmt.Errorf("unknown control command=%s", cmd)
