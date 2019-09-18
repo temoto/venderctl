@@ -1,3 +1,7 @@
+db {
+  url = "postgresql://EDIT_ME"
+}
+
 money {
   // Multiple of lowest money unit for config convenience and formatting.
   // All money numbers in config are multipled by scale.

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/go-pg/pg"
 	"github.com/juju/errors"
 	tele_api "github.com/temoto/vender/head/tele/api"
 	"github.com/temoto/venderctl/cmd/internal/cli"
@@ -14,8 +15,10 @@ import (
 	"github.com/temoto/venderctl/internal/tele"
 )
 
+const CmdName = "sponge"
+
 var Cmd = cli.Cmd{
-	Name:   "sponge",
+	Name:   CmdName,
 	Desc:   "telemetry network -> save to database",
 	Action: Main,
 }
@@ -28,6 +31,20 @@ func Main(ctx context.Context, flags *flag.FlagSet) error {
 	config.Tele.MqttSubscribe = []string{"+/w/+"}
 	g.MustInit(ctx, config)
 	g.Log.Debugf("config=%+v", g.Config)
+
+	// TODO maybe move this to g.MustInit
+	dbOpt, err := pg.ParseURL(config.DB.URL)
+	if err != nil {
+		g.Log.Fatalf("config db.url err=%v", err)
+	}
+	dbOpt.MinIdleConns = 1
+	dbOpt.IdleTimeout = -1
+	dbOpt.IdleCheckFrequency = -1
+	dbOpt.ApplicationName = "venderctl/" + CmdName
+	// MaxRetries:1,
+	// PoolSize:2,
+	// TODO maybe move this to g.MustInit
+	g.DB = pg.Connect(dbOpt)
 
 	cli.SdNotify(daemon.SdNotifyReady)
 	g.Log.Debugf("sponge init complete")

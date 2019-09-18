@@ -18,6 +18,9 @@ type Config struct {
 	// only used for Unmarshal, do not access
 	XXX_Include []ConfigSource `hcl:"include"`
 
+	DB struct {
+		URL string `hcl:"url"`
+	}
 	Money struct {
 		Scale int `hcl:"scale"`
 	}

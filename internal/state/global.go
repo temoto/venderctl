@@ -36,18 +36,6 @@ func NewContext(tag string, log *log2.Log) (context.Context, *Global) {
 	ctx = context.WithValue(ctx, log2.ContextKey, log)
 	ctx = context.WithValue(ctx, contextKey, g)
 
-	g.DB = pg.Connect(&pg.Options{
-		User:            "vender_dev", // TODO config
-		Password:        "dev",        // TODO config
-		Database:        "vender_dev", // TODO config
-		ApplicationName: "venderctl/" + tag,
-		// MaxRetries:1,
-		// PoolSize:2,
-		MinIdleConns:       1,
-		IdleTimeout:        -1,
-		IdleCheckFrequency: -1,
-	})
-
 	return ctx, g
 }
 
