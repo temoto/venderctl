@@ -254,7 +254,7 @@ func (c *Client) pinger() {
 		window := c.tracker.Window()
 		if window < 0 {
 			if c.tracker.Pending() {
-				c.disconnect(client.ErrClientMissingPong)
+				_ = c.disconnect(client.ErrClientMissingPong)
 				return
 			}
 
@@ -302,7 +302,7 @@ func (c *Client) reader() {
 				return
 			}
 			c.Log.Errorf("mqtt receive err=%v", err)
-			c.disconnect(err)
+			_ = c.disconnect(err)
 			return
 		}
 		c.Log.Debugf("mqtt received=%s", pkt.String())
@@ -337,7 +337,7 @@ func (c *Client) receivePublish(publish *packet.Publish) {
 		err := c.Config.OnMessage(&publish.Message)
 		if err != nil {
 			c.Log.Errorf("mqtt onMessage topic=%s payload=%x err=%v", publish.Message.Topic, publish.Message.Payload, err)
-			c.disconnect(err)
+			_ = c.disconnect(err)
 			return
 		}
 	}
@@ -348,7 +348,7 @@ func (c *Client) receivePublish(publish *packet.Publish) {
 		err := c.send(puback)
 		if err != nil {
 			// TODO retry send()
-			c.disconnect(err)
+			_ = c.disconnect(err)
 			return
 		}
 	}
@@ -367,7 +367,7 @@ func (c *Client) receivePuback(id packet.ID) {
 	}
 	if c.flowPublish.id != id {
 		// given no concurrent publish flow of this code, PUBACK for unexpected id is severe error
-		c.disconnect(errors.Errorf("puback id=%d expected=%d", id, c.flowPublish.id))
+		_ = c.disconnect(errors.Errorf("puback id=%d expected=%d", id, c.flowPublish.id))
 		return
 	}
 	atomic.StoreUint32(&c.flowPublish.state, publishAck)
@@ -433,5 +433,5 @@ func (c *Client) worker(initChan chan<- error) {
 		}
 		c.alive.WaitTasks()
 	}
-	c.disconnect(nil)
+	_ = c.disconnect(nil)
 }

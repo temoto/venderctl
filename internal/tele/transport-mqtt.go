@@ -22,7 +22,6 @@ import (
 )
 
 const defaultNetworkTimeout = 3 * time.Second
-const vmTimeout = 30 * time.Second
 
 type transportMqtt struct { //nolint:maligned
 	sync.Mutex
