@@ -8,6 +8,7 @@ import (
 
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/go-pg/pg"
+	"github.com/golang/protobuf/proto"
 	"github.com/juju/errors"
 	tele_api "github.com/temoto/vender/head/tele/api"
 	"github.com/temoto/venderctl/cmd/internal/cli"
@@ -108,13 +109,42 @@ func (app *app) onPacket(ctx context.Context, p tele.Packet) error {
 func (app *app) onState(ctx context.Context, vmid int32, state tele_api.State) error {
 	app.g.Log.Infof("vm=%d state=%s", vmid, state.String())
 
-	_, err := app.g.DB.Exec(`insert into state (vmid,state,received)
+	const q = `insert into state (vmid,state,received)
 values (?0,?1,?2)
-on conflict (vmid) do update set state=excluded.state, received=excluded.received`, vmid, state, time.Now())
-	return err
+on conflict (vmid) do update set state=excluded.state, received=excluded.received`
+	_, err := app.g.DB.Exec(q, vmid, state, time.Now())
+	return errors.Annotatef(err, "db query=%s", q)
 }
 
 func (app *app) onTelemetry(ctx context.Context, vmid int32, t *tele_api.Telemetry) error {
 	app.g.Log.Infof("vm=%d telemetry=%s", vmid, t.String())
-	return nil
+
+	return app.g.DB.RunInTransaction(func(db *pg.Tx) error {
+		done := false
+		if t.Error != nil {
+			const q = `insert into error (vmid,vmtime,received,code,message,count) values (?0,to_timestamp(?1),current_timestamp,?3,?4,?5)`
+			_, err := db.Exec(q, vmid, t.Time, t.Error.Code, t.Error.Message, t.Error.Count)
+			if err != nil {
+				return errors.Annotatef(err, "db query=%s t=%s", q, proto.CompactTextString(t))
+			}
+			done = true
+		}
+
+		if t.Transaction != nil {
+			const q = `insert into trans (vmid,vmtime,received,menu_code,options,price,method) values (?0,to_timestamp(?1),current_timestamp,?2,?3,?4,?5)`
+			_, err := db.Exec(q, vmid, t.Time, t.Transaction.Code, t.Transaction.Options, t.Transaction.Price, t.Transaction.PaymentMethod)
+			if err != nil {
+				return errors.Annotatef(err, "db query=%s t=%s", q, proto.CompactTextString(t))
+			}
+			done = true
+		}
+
+		const q = `insert into ingest (received,vmid,done,raw) values (current_timestamp,?0,?1,?2)`
+		raw, _ := proto.Marshal(t)
+		_, err := db.Exec(q, vmid, done, raw)
+		if err != nil {
+			return errors.Annotatef(err, "db query=%s t=%s", q, proto.CompactTextString(t))
+		}
+		return nil
+	})
 }

@@ -27,5 +27,19 @@ CREATE TABLE error (
     count int4 NULL
 );
 
-CREATE INDEX ON error (vmid, vmtime DESC);
+CREATE INDEX ON error (vmid, vmtime DESC) INCLUDE (code);
+
+CREATE TABLE trans (
+    vmid int4 NOT NULL,
+    vmtime timestamp WITH time zone NOT NULL,
+    received timestamp WITH time zone NOT NULL,
+    menu_code int4 NOT NULL,
+    options int[],
+    price int4 NOT NULL,
+    method int NOT NULL
+);
+
+CREATE INDEX ON trans (vmtime);
+
+CREATE UNIQUE INDEX ON trans (vmid, vmtime);
 
