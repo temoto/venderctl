@@ -122,7 +122,7 @@ func (app *app) onTelemetry(ctx context.Context, vmid int32, t *tele_api.Telemet
 	return app.g.DB.RunInTransaction(func(db *pg.Tx) error {
 		done := false
 		if t.Error != nil {
-			const q = `insert into error (vmid,vmtime,received,code,message,count) values (?0,to_timestamp(?1),current_timestamp,?3,?4,?5)`
+			const q = `insert into error (vmid,vmtime,received,code,message,count) values (?0,to_timestamp(?1/1e9),current_timestamp,?2,?3,?4)`
 			_, err := db.Exec(q, vmid, t.Time, t.Error.Code, t.Error.Message, t.Error.Count)
 			if err != nil {
 				return errors.Annotatef(err, "db query=%s t=%s", q, proto.CompactTextString(t))
@@ -131,8 +131,8 @@ func (app *app) onTelemetry(ctx context.Context, vmid int32, t *tele_api.Telemet
 		}
 
 		if t.Transaction != nil {
-			const q = `insert into trans (vmid,vmtime,received,menu_code,options,price,method) values (?0,to_timestamp(?1),current_timestamp,?2,?3,?4,?5)`
-			_, err := db.Exec(q, vmid, t.Time, t.Transaction.Code, t.Transaction.Options, t.Transaction.Price, t.Transaction.PaymentMethod)
+			const q = `insert into trans (vmid,vmtime,received,menu_code,options,price,method) values (?0,to_timestamp(?1/1e9),current_timestamp,?2,?3,?4,?5)`
+			_, err := db.Exec(q, vmid, t.Time, t.Transaction.Code, pg.Array(t.Transaction.Options), t.Transaction.Price, t.Transaction.PaymentMethod)
 			if err != nil {
 				return errors.Annotatef(err, "db query=%s t=%s", q, proto.CompactTextString(t))
 			}

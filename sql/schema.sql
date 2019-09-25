@@ -33,7 +33,7 @@ CREATE TABLE trans (
     vmid int4 NOT NULL,
     vmtime timestamp WITH time zone NOT NULL,
     received timestamp WITH time zone NOT NULL,
-    menu_code int4 NOT NULL,
+    menu_code text NOT NULL,
     options int[],
     price int4 NOT NULL,
     method int NOT NULL

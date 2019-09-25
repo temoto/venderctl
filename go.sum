@@ -86,8 +86,8 @@ github.com/temoto/iodin v0.0.0-20190211111721-99c87617ba86 h1:28eUgClE9ZSaq7N79v
 github.com/temoto/iodin v0.0.0-20190211111721-99c87617ba86/go.mod h1:PSCCOZs9yzxJX2JS1q+rk6pzNvFhs5HGfpnAmsELeMY=
 github.com/temoto/spq v0.9.0 h1:9RYxnBILbWAL1XTHCEZSorXYpTWtWbrT6BqgAtILuXI=
 github.com/temoto/spq v0.9.0/go.mod h1:k9+FS+9q1Yv7SuQQ1LSTuoweDCyR6w/aZgQG0Jr/2es=
-github.com/temoto/vender v0.0.0-20190910204225-900a6ed95b39 h1:srUNVINa+/7fZpkC+7T/Ko5onFtEx5kOq6lSfkQrhk4=
-github.com/temoto/vender v0.0.0-20190910204225-900a6ed95b39/go.mod h1:7lCRZEF/x1+yfdwd2fx37NrL04CsnuATuJD7vs81HaE=
+github.com/temoto/vender v0.0.0-20190925081036-52c23ccc52fd h1:XxHA+86fwfWPyJDhVshG6nCqkhS9ZFQNTtPzPtaUjKM=
+github.com/temoto/vender v0.0.0-20190925081036-52c23ccc52fd/go.mod h1:7lCRZEF/x1+yfdwd2fx37NrL04CsnuATuJD7vs81HaE=
 golang.org/x/crypto v0.0.0-20180910181607-0e37d006457b/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2 h1:VklqNMn3ovrHsnt90PveolxSbWFaJdECFbxSq0Mqo2M=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
