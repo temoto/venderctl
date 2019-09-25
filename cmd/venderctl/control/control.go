@@ -58,6 +58,16 @@ func Main(ctx context.Context, flags *flag.FlagSet) error {
 		_, err := g.Tele.CommandTx(targetId, cmd, replyTimeout)
 		return err
 
+	case "ping":
+		cmd := &tele_api.Command{
+			Task: &tele_api.Command_Exec{Exec: &tele_api.Command_ArgExec{
+				Scenario: "",
+				Lock:     false,
+			}},
+		}
+		_, err := g.Tele.CommandTx(targetId, cmd, replyTimeout)
+		return err
+
 	case "set-inventory":
 		g.Log.Fatal("TODO send set-inventory, show response")
 		return nil
