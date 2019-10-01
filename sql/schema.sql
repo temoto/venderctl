@@ -1,3 +1,5 @@
+CREATE EXTENSION hstore;
+
 CREATE TABLE ingest (
     received timestamp WITH time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     vmid int4 NOT NULL,
@@ -12,10 +14,11 @@ WHERE (NOT done);
 CREATE TABLE state (
     vmid int4 NOT NULL,
     state int4 NOT NULL,
+    inventory hstore,
     received timestamp WITH time zone NOT NULL
 );
 
-CREATE UNIQUE INDEX ON state (vmid) INCLUDE (state, received) WITH (fillfactor = 10);
+CREATE UNIQUE INDEX ON state (vmid) INCLUDE (state, inventory, received) WITH (fillfactor = 10);
 
 -- Recent reported errors
 CREATE TABLE error (

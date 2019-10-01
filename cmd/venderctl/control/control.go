@@ -17,7 +17,11 @@ import (
 
 const replyTimeout = 51 * time.Second
 
-const cmdUsage = "MACHINE-ID {report | ping | set-inventory | get-config | set-config | exec SCENARIO... | lock DURATION}"
+// TODO set-inventory
+// TODO get-config
+// TODO set-config
+// const cmdUsage = "MACHINE-ID {report | ping | set-inventory | get-config | set-config | exec SCENARIO... | lock DURATION}"
+const cmdUsage = "MACHINE-ID {report | ping | exec SCENARIO... | lock DURATION}"
 
 var Cmd = cli.Cmd{
 	Name:   "control",
