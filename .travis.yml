@@ -9,7 +9,7 @@ go: 1.12
 env:
 - GO111MODULE=on
 
-install: $HOME/bin/golangci-lint || curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $HOME/bin v1.16.0
+install: $HOME/bin/golangci-lint || curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $HOME/bin v1.19.1
 script: script/test
 before_cache: rm -f $HOME/.cache/go-build/log.txt
 
