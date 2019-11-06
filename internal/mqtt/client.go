@@ -27,6 +27,7 @@ type Client struct { //nolint:maligned
 	sync.Mutex
 
 	Config struct {
+		ReconnectDelay time.Duration
 		NetworkTimeout time.Duration
 		BrokerURL      string
 		KeepaliveSec   uint16
@@ -61,6 +62,8 @@ type Client struct { //nolint:maligned
 	}
 }
 
+const DefaultReconnectDelay = 3 * time.Second
+
 const (
 	clientInitialized uint32 = iota
 	clientConnecting
@@ -78,6 +81,10 @@ const (
 
 func (c *Client) Init() error {
 	c.alive = alive.NewAlive()
+
+	if c.Config.ReconnectDelay == 0 {
+		c.Config.ReconnectDelay = DefaultReconnectDelay
+	}
 
 	if _, err := url.ParseRequestURI(c.Config.BrokerURL); err != nil {
 		return errors.Annotatef(err, "mqtt dial broker=%s", c.Config.BrokerURL)
@@ -430,6 +437,9 @@ func (c *Client) worker(initChan chan<- error) {
 		if first {
 			first = false
 			initChan <- err
+		}
+		if errors.Cause(err) == client.ErrClientAlreadyConnecting {
+			time.Sleep(c.Config.ReconnectDelay)
 		}
 		c.alive.WaitTasks()
 	}
