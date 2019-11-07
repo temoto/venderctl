@@ -14,11 +14,30 @@ WHERE (NOT done);
 CREATE TABLE state (
     vmid int4 NOT NULL,
     state int4 NOT NULL,
-    inventory hstore,
     received timestamp WITH time zone NOT NULL
 );
 
-CREATE UNIQUE INDEX ON state (vmid) INCLUDE (state, inventory, received) WITH (fillfactor = 10);
+CREATE UNIQUE INDEX ON state (vmid) INCLUDE (state, received) WITH (fillfactor = 10);
+
+CREATE TABLE inventory (
+    vmid int4 NOT NULL,
+    at_service bool NOT NULL,
+    vmtime timestamp WITH time zone NOT NULL,
+    received timestamp WITH time zone NOT NULL,
+    inventory hstore,
+    cashbox_bill hstore,
+    cashbox_coin hstore,
+    change_bill hstore,
+    change_coin hstore
+);
+
+CREATE UNIQUE INDEX ON inventory (vmid) WITH (fillfactor = 10)
+WHERE
+    at_service;
+
+CREATE UNIQUE INDEX ON inventory (vmid) WITH (fillfactor = 10)
+WHERE
+    NOT at_service;
 
 -- Recent reported errors
 CREATE TABLE error (

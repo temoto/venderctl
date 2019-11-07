@@ -9,9 +9,9 @@ require (
 	github.com/golang/protobuf v1.3.1
 	github.com/hashicorp/hcl v1.0.0
 	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/juju/errors v0.0.0-20190806202954-0232dcc7464d
-	github.com/stretchr/testify v1.3.0
+	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
+	github.com/stretchr/testify v1.4.0
 	github.com/temoto/alive v1.1.0
-	github.com/temoto/vender v0.0.0-20190925081036-52c23ccc52fd
+	github.com/temoto/vender v0.0.0-20191106103951-a534fe26e7ff
 	mellium.im/sasl v0.2.1 // indirect
 )

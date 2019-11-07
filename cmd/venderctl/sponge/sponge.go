@@ -8,6 +8,7 @@ import (
 
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/go-pg/pg"
+	pg_types "github.com/go-pg/pg/types"
 	"github.com/golang/protobuf/proto"
 	"github.com/juju/errors"
 	tele_api "github.com/temoto/vender/head/tele/api"
@@ -136,14 +137,31 @@ func (app *app) onTelemetry(ctx context.Context, vmid int32, t *tele_api.Telemet
 		}
 	}
 
-	if t.Inventory != nil {
-		const q = `insert into state (vmid,state,inventory,received) values (?0, 0, ?1, current_timestamp)
-on conflict (vmid) do update set inventory=excluded.inventory, received=excluded.received`
+	if t.Inventory != nil || t.MoneyCashbox != nil {
+		const q = `insert into inventory (vmid,at_service,vmtime,received,inventory,cashbox_bill,cashbox_coin,change_bill,change_coin) values (?0,?1,to_timestamp(?2/1e9),current_timestamp,?3,?4,?5,?6,?7)
+on conflict (vmid) where at_service=?1 do update set
+  vmtime=excluded.vmtime,received=excluded.received,inventory=excluded.inventory,
+	cashbox_bill=excluded.cashbox_bill,cashbox_coin=excluded.cashbox_coin,
+	change_bill=excluded.change_bill,change_coin=excluded.change_coin`
 		invMap := make(map[string]string)
-		for _, item := range t.Inventory.Stocks {
-			invMap[item.Name] = strconv.FormatInt(int64(item.Value), 10)
+		var cashboxBill *pg_types.Hstore
+		var cashboxCoin *pg_types.Hstore
+		var changeBill *pg_types.Hstore
+		var changeCoin *pg_types.Hstore
+		if t.MoneyCashbox != nil {
+			cashboxBill = mapUint32ToHstore(t.MoneyCashbox.Bills)
+			cashboxCoin = mapUint32ToHstore(t.MoneyCashbox.Coins)
 		}
-		_, err := app.g.DB.Exec(q, vmid, pg.Hstore(invMap))
+		if t.MoneyChange != nil {
+			changeBill = mapUint32ToHstore(t.MoneyChange.Bills)
+			changeCoin = mapUint32ToHstore(t.MoneyChange.Coins)
+		}
+		if t.Inventory != nil {
+			for _, item := range t.Inventory.Stocks {
+				invMap[item.Name] = strconv.FormatInt(int64(item.Value), 10)
+			}
+		}
+		_, err := app.g.DB.Exec(q, vmid, t.GetAtService(), t.Time, pg.Hstore(invMap), cashboxBill, cashboxCoin, changeBill, changeCoin)
 		if err != nil {
 			errs = append(errs, errors.Annotatef(err, "db query=%s t=%s", q, proto.CompactTextString(t)))
 		}
@@ -156,4 +174,12 @@ on conflict (vmid) do update set inventory=excluded.inventory, received=excluded
 		errs = append(errs, errors.Annotatef(err, "db query=%s t=%s", q, proto.CompactTextString(t)))
 	}
 	return helpers.FoldErrors(errs)
+}
+
+func mapUint32ToHstore(from map[uint32]uint32) *pg_types.Hstore {
+	m := make(map[string]string, len(from))
+	for k, v := range from {
+		m[strconv.FormatInt(int64(k), 10)] = strconv.FormatInt(int64(v), 10)
+	}
+	return pg.Hstore(m)
 }
