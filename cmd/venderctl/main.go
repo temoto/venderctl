@@ -29,7 +29,7 @@ func main() {
 	flags.Usage = func() {
 		usage := "Usage: venderctl [global options] command [options]\n"
 		usage += "\nGlobal options:\n"
-		fmt.Fprintf(flags.Output(), usage)
+		fmt.Fprint(flags.Output(), usage)
 		flags.PrintDefaults()
 		cmds := "\nCommands:\n"
 		for i, c := range commands {
@@ -41,7 +41,7 @@ func main() {
 				cmds += "\n"
 			}
 		}
-		fmt.Fprintf(flags.Output(), cmds)
+		fmt.Fprint(flags.Output(), cmds)
 	}
 
 	err := flags.Parse(os.Args[1:])
@@ -68,7 +68,7 @@ func main() {
 			flags.Usage = func() {
 				usage := fmt.Sprintf("Usage: venderctl [global options] %s %s\n", cmdName, c.Usage)
 				usage += "\nGlobal options:\n"
-				fmt.Fprintf(flags.Output(), usage)
+				fmt.Fprint(flags.Output(), usage)
 				flags.PrintDefaults()
 			}
 			if cli.IsHelp(flags.Arg(2)) {
