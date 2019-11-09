@@ -144,24 +144,29 @@ on conflict (vmid) where at_service=?1 do update set
 	cashbox_bill=excluded.cashbox_bill,cashbox_coin=excluded.cashbox_coin,
 	change_bill=excluded.change_bill,change_coin=excluded.change_coin`
 		invMap := make(map[string]string)
-		var cashboxBill *pg_types.Hstore
-		var cashboxCoin *pg_types.Hstore
-		var changeBill *pg_types.Hstore
-		var changeCoin *pg_types.Hstore
+		var cashboxBillMap map[uint32]uint32
+		var cashboxCoinMap map[uint32]uint32
+		var changeBillMap map[uint32]uint32
+		var changeCoinMap map[uint32]uint32
 		if t.MoneyCashbox != nil {
-			cashboxBill = mapUint32ToHstore(t.MoneyCashbox.Bills)
-			cashboxCoin = mapUint32ToHstore(t.MoneyCashbox.Coins)
+			cashboxBillMap = t.MoneyCashbox.Bills
+			cashboxCoinMap = t.MoneyCashbox.Coins
 		}
 		if t.MoneyChange != nil {
-			changeBill = mapUint32ToHstore(t.MoneyChange.Bills)
-			changeCoin = mapUint32ToHstore(t.MoneyChange.Coins)
+			changeBillMap = t.MoneyChange.Bills
+			changeCoinMap = t.MoneyChange.Coins
 		}
 		if t.Inventory != nil {
 			for _, item := range t.Inventory.Stocks {
 				invMap[item.Name] = strconv.FormatInt(int64(item.Value), 10)
 			}
 		}
-		_, err := app.g.DB.Exec(q, vmid, t.GetAtService(), t.Time, pg.Hstore(invMap), cashboxBill, cashboxCoin, changeBill, changeCoin)
+		_, err := app.g.DB.Exec(q, vmid, t.GetAtService(), t.Time, pg.Hstore(invMap),
+			mapUint32ToHstore(cashboxBillMap),
+			mapUint32ToHstore(cashboxCoinMap),
+			mapUint32ToHstore(changeBillMap),
+			mapUint32ToHstore(changeCoinMap),
+		)
 		if err != nil {
 			errs = append(errs, errors.Annotatef(err, "db query=%s t=%s", q, proto.CompactTextString(t)))
 		}
