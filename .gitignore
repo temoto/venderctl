@@ -27,6 +27,6 @@ _testmain.go
 cmd/venderctl/venderctl
 coverage.info
 coverage.txt
-local.hcl
 tmp-venderctl-db/
+venderctl-local.hcl
 venderctl.sublime-*

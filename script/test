@@ -23,7 +23,9 @@ ensure_golangci_lint() {
 	golangci-lint -h &>/dev/null && return 0
 
 	echo "$0: golangci-lint is not installed; CI should just work" >&2
-	confirm "Local dev? Install golangci-lint? [yN] " || return 1
+	if [[ -z ${CI} ]] ; then
+		confirm "Local dev? Install golangci-lint? [yN] " || return 1
+	fi
 	(
 		set -eux
 		cd $(mktemp -d)
@@ -48,4 +50,6 @@ confirm() {
     return $rc
 }
 
-main
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]] ; then
+  main "$@"
+fi

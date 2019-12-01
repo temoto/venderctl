@@ -1,4 +1,13 @@
+addons:
+  postgresql: "11"
+  apt:
+    packages:
+    - postgresql-11
+    - postgresql-client-11
+services:
+- postgresql
 cache:
+  apt: true
   go: true
   directories:
   - $HOME/.cache
@@ -7,9 +16,20 @@ cache:
 language: go
 go: 1.12
 env:
-- GO111MODULE=on
+  global:
+  - GO111MODULE=on
+  - PGPORT=5433
+  - "venderctl_db_url=postgresql://postgres@:5433/venderctl_test"
+
+# sudo: true
+# https://github.com/travis-ci/travis-ci/issues/9624
+before_install:
+- sudo sed -i -e '/local.*peer/s/postgres/all/' -e 's/peer\|md5/trust/g' /etc/postgresql/*/main/pg_hba.conf
+- sudo systemctl restart postgresql@11-main
+- sleep 1
 
 install: $HOME/bin/golangci-lint || curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $HOME/bin v1.19.1
+before_script: psql -U postgres -c 'select version()' -c 'create database venderctl_test'
 script: script/test
 before_cache: rm -f $HOME/.cache/go-build/log.txt
 
