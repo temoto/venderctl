@@ -19,6 +19,23 @@ import (
 	"github.com/temoto/venderctl/internal/state"
 )
 
+type MError struct { //nolint:maligned
+	VmId       int32     `pg:"vmid"`
+	VmTime     time.Time `pg:"vmtime"`
+	Received   time.Time
+	AppVersion string
+	Code       int32
+	Message    string
+	Count      int32
+}
+
+type MIngest struct {
+	Received time.Time
+	VmId     int32 `pg:"vmid"`
+	Done     bool
+	Raw      []byte
+}
+
 type MState struct {
 	VmId     int32 `pg:"vmid"`
 	State    tele_api.State
@@ -52,6 +69,31 @@ func TestSpongeDB(t *testing.T) {
 		name  string
 		check func(*tenv)
 	}{
+		{"error", func(env *tenv) {
+			t := env.t
+			b, err := hex.DecodeString("080810ab92edc58d92eaef151a0912076578616d706c653a008a0105302e312e30")
+			require.NoError(t, err)
+			var tm tele_api.Telemetry
+			require.NoError(t, proto.Unmarshal(b, &tm))
+			require.NoError(t, env.app.onTelemetry(env.ctx, env.dbConn, tm.VmId, &tm))
+
+			var count int
+			_, err = env.dbConn.QueryOne(pg.Scan(&count), `select count(*) from trans`)
+			require.NoError(t, err)
+			assert.Equal(t, 0, count)
+
+			var errorRow MError
+			_, err = env.dbConn.QueryOne(&errorRow, `select * from error where vmid=?`, tm.VmId)
+			require.NoError(t, err)
+			assert.Equal(t, tm.VmId, errorRow.VmId)
+			assert.Equal(t, "0.1.0", errorRow.AppVersion)
+			assert.Equal(t, "example", errorRow.Message)
+
+			var ingest MIngest
+			_, err = env.dbConn.QueryOne(&ingest, `select * from ingest where vmid=?`, tm.VmId)
+			require.NoError(t, err)
+			assert.Equal(t, b, ingest.Raw)
+		}},
 		{"state", func(env *tenv) {
 			t := env.t
 			vmid := rand.Int31()
@@ -76,7 +118,7 @@ func TestSpongeDB(t *testing.T) {
 		}},
 		{"telemetry", func(env *tenv) {
 			t := env.t
-			b, err := hex.DecodeString("08f78c3d3205080518fc113a00")
+			b, err := hex.DecodeString("08f78c3d320518fc1108053a00")
 			require.NoError(t, err)
 			var tm tele_api.Telemetry
 			require.NoError(t, proto.Unmarshal(b, &tm))
@@ -89,6 +131,11 @@ func TestSpongeDB(t *testing.T) {
 			_, err = env.dbConn.QueryOne(&tr, `select * from trans where vmid=?`, tm.VmId)
 			require.NoError(t, err)
 			assert.Equal(t, proto.CompactTextString(&tm), fmt.Sprintf("vm_id:%d transaction:<price:%d 1:5 > stat:<> ", tr.VmId, tr.Price))
+
+			var ingest MIngest
+			_, err = env.dbConn.QueryOne(&ingest, `select * from ingest where vmid=?`, tm.VmId)
+			require.NoError(t, err)
+			assert.Equal(t, b, ingest.Raw)
 		}},
 	}
 

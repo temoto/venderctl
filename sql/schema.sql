@@ -1,4 +1,4 @@
-CREATE EXTENSION hstore;
+CREATE EXTENSION IF NOT EXISTS hstore;
 
 CREATE TABLE ingest (
     received timestamp WITH time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -44,6 +44,7 @@ CREATE TABLE error (
     vmid int4 NOT NULL,
     vmtime timestamp WITH time zone NOT NULL,
     received timestamp WITH time zone NOT NULL,
+    app_version text NULL,
     code int4 NULL,
     message text NOT NULL,
     count int4 NULL

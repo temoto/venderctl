@@ -3,6 +3,8 @@ package state
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"time"
 
 	"github.com/go-pg/pg/v9"
 	"github.com/juju/errors"
@@ -76,6 +78,30 @@ func (g *Global) MustInit(ctx context.Context, cfg *Config) {
 	}
 }
 
+func (g *Global) InitDB(cmdName string) error {
+	pingTimeout := helpers.IntMillisecondDefault(g.Config.DB.PingTimeoutMs, 5*time.Second)
+
+	dbOpt, err := pg.ParseURL(g.Config.DB.URL)
+	if err != nil {
+		cleanUrl, _ := url.Parse(g.Config.DB.URL)
+		if cleanUrl.User != nil {
+			cleanUrl.User = url.UserPassword("_hidden_", "_hidden_")
+		}
+		return errors.Annotatef(err, "config db.url=%s", cleanUrl.String())
+	}
+	dbOpt.MinIdleConns = 1
+	dbOpt.IdleTimeout = -1
+	dbOpt.IdleCheckFrequency = -1
+	dbOpt.ApplicationName = "venderctl/" + cmdName
+	// MaxRetries:1,
+	// PoolSize:2,
+
+	g.DB = pg.Connect(dbOpt)
+	g.DB.AddQueryHook(queryHook{g})
+	_, err = g.DB.WithTimeout(pingTimeout).Exec(`select 1`)
+	return errors.Annotate(err, "db ping")
+}
+
 func (g *Global) Error(err error, args ...interface{}) {
 	if err != nil {
 		if len(args) != 0 {
@@ -86,3 +112,13 @@ func (g *Global) Error(err error, args ...interface{}) {
 		g.Log.Errorf(errors.ErrorStack(err))
 	}
 }
+
+type queryHook struct{ g *Global }
+
+func (q queryHook) BeforeQuery(ctx context.Context, e *pg.QueryEvent) (context.Context, error) {
+	s, err := e.FormattedQuery()
+	q.g.Log.Debugf("sql q=%s err=%v", s, err)
+	return ctx, nil
+}
+
+func (queryHook) AfterQuery(context.Context, *pg.QueryEvent) error { return nil }

@@ -4,9 +4,7 @@ package sponge
 import (
 	"context"
 	"flag"
-	"net/url"
 	"strconv"
-	"time"
 
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/go-pg/pg/v9"
@@ -27,8 +25,6 @@ var Cmd = cli.Cmd{
 	Desc:   "telemetry network -> save to database",
 	Action: Main,
 }
-
-const pingTimeout = 5 * time.Second
 
 func Main(ctx context.Context, flags *flag.FlagSet) error {
 	g := state.GetGlobal(ctx)
@@ -53,26 +49,8 @@ type appSponge struct {
 }
 
 func (app *appSponge) init(ctx context.Context) error {
-	// TODO maybe move this to g.MustInit
-	dbOpt, err := pg.ParseURL(app.g.Config.DB.URL)
-	if err != nil {
-		cleanUrl, _ := url.Parse(app.g.Config.DB.URL)
-		if cleanUrl.User != nil {
-			cleanUrl.User = url.UserPassword("_hidden_", "_hidden_")
-		}
-		return errors.Annotatef(err, "config db.url=%s", cleanUrl.String())
-	}
-	dbOpt.MinIdleConns = 1
-	dbOpt.IdleTimeout = -1
-	dbOpt.IdleCheckFrequency = -1
-	dbOpt.ApplicationName = "venderctl/" + CmdName
-	// MaxRetries:1,
-	// PoolSize:2,
-	// TODO maybe move this to g.MustInit
-	app.g.DB = pg.Connect(dbOpt)
-	app.g.DB.AddQueryHook(queryHook{app.g})
-	if _, err := app.g.DB.WithTimeout(pingTimeout).Exec(`select 1`); err != nil {
-		return errors.Annotate(err, "db ping")
+	if err := app.g.InitDB(CmdName); err != nil {
+		return errors.Annotate(err, "sponge init")
 	}
 
 	cli.SdNotify(daemon.SdNotifyReady)
@@ -142,27 +120,29 @@ on conflict (vmid) do update set state=excluded.state, received=excluded.receive
 func (app *appSponge) onTelemetry(ctx context.Context, dbConn *pg.Conn, vmid int32, t *tele_api.Telemetry) error {
 	app.g.Log.Infof("vm=%d telemetry=%s", vmid, t.String())
 
+	dbConn = dbConn.WithParam("vmid", vmid).WithParam("vmtime", t.Time)
+
 	errs := make([]error, 0)
 	if t.Error != nil {
-		const q = `insert into error (vmid,vmtime,received,code,message,count) values (?0,to_timestamp(?1/1e9),current_timestamp,?2,?3,?4)`
-		_, err := dbConn.Exec(q, vmid, t.Time, t.Error.Code, t.Error.Message, t.Error.Count)
+		const q = `insert into error (vmid,vmtime,received,app_version,code,message,count) values (?vmid,to_timestamp(?vmtime/1e9),current_timestamp,?0,?1,?2,?3)`
+		_, err := dbConn.Exec(q, t.BuildVersion, t.Error.Code, t.Error.Message, t.Error.Count)
 		if err != nil {
 			errs = append(errs, errors.Annotatef(err, "db query=%s t=%s", q, proto.CompactTextString(t)))
 		}
 	}
 
 	if t.Transaction != nil {
-		const q = `insert into trans (vmid,vmtime,received,menu_code,options,price,method) values (?0,to_timestamp(?1/1e9),current_timestamp,?2,?3,?4,?5)
+		const q = `insert into trans (vmid,vmtime,received,menu_code,options,price,method) values (?vmid,to_timestamp(?vmtime/1e9),current_timestamp,?0,?1,?2,?3)
 on conflict (vmid,vmtime) do nothing`
-		_, err := dbConn.Exec(q, vmid, t.Time, t.Transaction.Code, pg.Array(t.Transaction.Options), t.Transaction.Price, t.Transaction.PaymentMethod)
+		_, err := dbConn.Exec(q, t.Transaction.Code, pg.Array(t.Transaction.Options), t.Transaction.Price, t.Transaction.PaymentMethod)
 		if err != nil {
 			errs = append(errs, errors.Annotatef(err, "db query=%s t=%s", q, proto.CompactTextString(t)))
 		}
 	}
 
 	if t.Inventory != nil || t.MoneyCashbox != nil {
-		const q = `insert into inventory (vmid,at_service,vmtime,received,inventory,cashbox_bill,cashbox_coin,change_bill,change_coin) values (?0,?1,to_timestamp(?2/1e9),current_timestamp,?3,?4,?5,?6,?7)
-on conflict (vmid) where at_service=?1 do update set
+		const q = `insert into inventory (vmid,at_service,vmtime,received,inventory,cashbox_bill,cashbox_coin,change_bill,change_coin) values (?vmid,?0,to_timestamp(?vmtime/1e9),current_timestamp,?1,?2,?3,?4,?5)
+on conflict (vmid) where at_service=?0 do update set
   vmtime=excluded.vmtime,received=excluded.received,inventory=excluded.inventory,
 	cashbox_bill=excluded.cashbox_bill,cashbox_coin=excluded.cashbox_coin,
 	change_bill=excluded.change_bill,change_coin=excluded.change_coin`
@@ -184,7 +164,7 @@ on conflict (vmid) where at_service=?1 do update set
 				invMap[item.Name] = strconv.FormatFloat(float64(item.Valuef), 'f', -1, 32)
 			}
 		}
-		_, err := dbConn.Exec(q, vmid, t.GetAtService(), t.Time, pg.Hstore(invMap),
+		_, err := dbConn.Exec(q, t.GetAtService(), pg.Hstore(invMap),
 			mapUint32ToHstore(cashboxBillMap),
 			mapUint32ToHstore(cashboxCoinMap),
 			mapUint32ToHstore(changeBillMap),
@@ -195,9 +175,9 @@ on conflict (vmid) where at_service=?1 do update set
 		}
 	}
 
-	const q = `insert into ingest (received,vmid,done,raw) values (current_timestamp,?0,?1,?2)`
+	const q = `insert into ingest (received,vmid,done,raw) values (current_timestamp,?vmid,?0,?1)`
 	raw, _ := proto.Marshal(t)
-	_, err := dbConn.Exec(q, vmid, len(errs) == 0, raw)
+	_, err := dbConn.Exec(q, len(errs) == 0, raw)
 	if err != nil {
 		errs = append(errs, errors.Annotatef(err, "db query=%s t=%s", q, proto.CompactTextString(t)))
 	}
@@ -211,13 +191,3 @@ func mapUint32ToHstore(from map[uint32]uint32) *pg_types.Hstore {
 	}
 	return pg.Hstore(m)
 }
-
-type queryHook struct{ g *state.Global }
-
-func (q queryHook) BeforeQuery(ctx context.Context, e *pg.QueryEvent) (context.Context, error) {
-	s, err := e.FormattedQuery()
-	q.g.Log.Debugf("sql q=%s err=%v", s, err)
-	return ctx, nil
-}
-
-func (queryHook) AfterQuery(context.Context, *pg.QueryEvent) error { return nil }

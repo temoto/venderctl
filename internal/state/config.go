@@ -19,7 +19,8 @@ type Config struct {
 	XXX_Include []ConfigSource `hcl:"include"`
 
 	DB struct {
-		URL string `hcl:"url"`
+		PingTimeoutMs int    `hcl:"ping_timeout_ms"`
+		URL           string `hcl:"url"`
 	}
 	Money struct {
 		Scale int `hcl:"scale"`
