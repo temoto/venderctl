@@ -4,7 +4,10 @@ package sponge
 import (
 	"context"
 	"flag"
+	"fmt"
+	"os/exec"
 	"strconv"
+	"strings"
 
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/go-pg/pg/v9"
@@ -111,17 +114,39 @@ func (app *appSponge) onPacket(ctx context.Context, p tele.Packet) error {
 func (app *appSponge) onState(ctx context.Context, dbConn *pg.Conn, vmid int32, state tele_api.State) error {
 	app.g.Log.Infof("vm=%d state=%s", vmid, state.String())
 
-	const q = `insert into state (vmid,state,received) values (?0,?1,current_timestamp)
-on conflict (vmid) do update set state=excluded.state, received=excluded.received`
-	_, err := dbConn.Exec(q, vmid, state)
-	return errors.Annotatef(err, "db query=%s", q)
+	dbConn = dbConn.WithParam("vmid", vmid).WithParam("state", state)
+	var old_state tele_api.State
+	_, err := dbConn.Query(pg.Scan(&old_state), `select state_update(?vmid, ?state)`)
+	err = errors.Annotatef(err, "db state_update")
+	// app.g.Log.Infof("vm=%d old_state=%s", vmid, old_state.String())
+
+	if app.g.Config.Sponge.ExecOnState != "" {
+		cmd := exec.Command(app.g.Config.Sponge.ExecOnState)
+		cmd.Env = []string{
+			fmt.Sprintf("db_updated=%t", err == nil),
+			fmt.Sprintf("vmid=%d", vmid),
+			fmt.Sprintf("new=%d", state),
+			fmt.Sprintf("prev=%d", old_state),
+		}
+		app.g.Alive.Add(1)
+		go func() {
+			defer app.g.Alive.Done()
+			execOutput, execErr := cmd.CombinedOutput()
+			prettyEnv := strings.Join(cmd.Env, " ")
+			if execErr != nil {
+				execErr = errors.Annotatef(execErr, "exec_on_state %s %s output=%s", prettyEnv, cmd.Path, execOutput)
+				app.g.Log.Error(execErr)
+			}
+		}()
+	}
+
+	return err
 }
 
 func (app *appSponge) onTelemetry(ctx context.Context, dbConn *pg.Conn, vmid int32, t *tele_api.Telemetry) error {
 	app.g.Log.Infof("vm=%d telemetry=%s", vmid, t.String())
 
 	dbConn = dbConn.WithParam("vmid", vmid).WithParam("vmtime", t.Time)
-
 	errs := make([]error, 0)
 	if t.Error != nil {
 		const q = `insert into error (vmid,vmtime,received,app_version,code,message,count) values (?vmid,to_timestamp(?vmtime/1e9),current_timestamp,?0,?1,?2,?3)`

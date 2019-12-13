@@ -66,3 +66,27 @@ CREATE INDEX ON trans (vmtime);
 
 CREATE UNIQUE INDEX ON trans (vmid, vmtime);
 
+CREATE OR REPLACE FUNCTION state_update (arg_vmid int4, arg_state int4)
+    RETURNS int4
+    AS $$
+DECLARE
+    old_state int4 = NULL;
+BEGIN
+    SELECT
+        state INTO old_state
+    FROM
+        state
+    WHERE
+        vmid = arg_vmid
+    LIMIT 1
+    FOR UPDATE;
+    INSERT INTO state (vmid, state, received)
+    VALUES (arg_vmid, arg_state, CURRENT_TIMESTAMP)
+ON CONFLICT (vmid)
+    DO UPDATE SET
+        state = excluded.state, received = excluded.received;
+    RETURN old_state;
+END;
+$$
+LANGUAGE plpgsql;
+

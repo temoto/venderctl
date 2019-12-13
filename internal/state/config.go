@@ -28,6 +28,9 @@ type Config struct {
 	Persist struct {
 		Root string `hcl:"root"`
 	}
+	Sponge struct {
+		ExecOnState string `hcl:"exec_on_state"`
+	}
 	Tele tele_config.Config
 
 	_copy_guard sync.Mutex //nolint:unused

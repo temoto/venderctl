@@ -66,10 +66,11 @@ func TestSpongeDB(t *testing.T) {
 	}
 
 	cases := []struct {
-		name  string
-		check func(*tenv)
+		name   string
+		config string
+		check  func(*tenv)
 	}{
-		{"error", func(env *tenv) {
+		{"error", "", func(env *tenv) {
 			t := env.t
 			b, err := hex.DecodeString("080810ab92edc58d92eaef151a0912076578616d706c653a008a0105302e312e30")
 			require.NoError(t, err)
@@ -94,7 +95,7 @@ func TestSpongeDB(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, b, ingest.Raw)
 		}},
-		{"state", func(env *tenv) {
+		{"state", `sponge { exec_on_state="false" }`, func(env *tenv) {
 			t := env.t
 			vmid := rand.Int31()
 			var count int
@@ -116,7 +117,7 @@ func TestSpongeDB(t *testing.T) {
 			assert.Equal(t, vmid, st.VmId)
 			assert.Equal(t, tele_api.State_Nominal, st.State)
 		}},
-		{"telemetry", func(env *tenv) {
+		{"telemetry", "", func(env *tenv) {
 			t := env.t
 			b, err := hex.DecodeString("08f78c3d320518fc1108053a00")
 			require.NoError(t, err)
@@ -145,7 +146,7 @@ func TestSpongeDB(t *testing.T) {
 			// t.Parallel() FIXME conflicts with pg.SetLogger()
 			pg.SetLogger(state.Log2stdlib(log2.NewTest(t, log2.LDebug)))
 			env := &tenv{t: t}
-			env.ctx, env.g = state.NewTestContext(t, "")
+			env.ctx, env.g = state.NewTestContext(t, c.config)
 			env.app = appSponge{g: env.g}
 			require.NoError(t, env.app.init(env.ctx))
 

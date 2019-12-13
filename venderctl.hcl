@@ -9,6 +9,10 @@ money {
   scale = 100
 }
 
+sponge {
+  exec_on_state = "/usr/local/bin/vender-on-state"
+}
+
 include "venderctl-local.hcl" {
   optional = true
 }
