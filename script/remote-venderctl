@@ -1,16 +1,12 @@
 #!/bin/bash
 set -eu
 base="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
-target=./cmd/venderctl/venderctl
-gopkg=$(dirname $target)
-name=$(basename $target)
 test_flag=(-race -timeout=11s)
 : ${remote?"must set env remote"}
 
 echo "- run tests" >&2
 set -x
 go test "${test_flag[@]}" ./... >/dev/null || go test -v "${test_flag[@]}" ./...
-GOARCH=amd64 GOOS=linux go build -o $base/$target $gopkg
-rsync -a $base/$target $base/venderctl.hcl $remote:~/
-cmd=${1:-} ; shift
-ssh -t $remote time \~/$name -config=venderctl.hcl "$cmd" "$@"
+GOARCH=amd64 GOOS=linux script/build
+rsync -a build/venderctl $remote:~/
+ssh -t $remote time \~/venderctl -config=venderctl.hcl "$@"

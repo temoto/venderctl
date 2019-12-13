@@ -15,11 +15,12 @@ import (
 )
 
 type Global struct {
-	Alive  *alive.Alive
-	Config *Config
-	DB     *pg.DB
-	Log    *log2.Log
-	Tele   *tele.Tele
+	Alive        *alive.Alive
+	BuildVersion string
+	Config       *Config
+	DB           *pg.DB
+	Log          *log2.Log
+	Tele         *tele.Tele
 }
 
 const contextKey = "run/state-global"

@@ -15,6 +15,7 @@
 *.test
 *~
 .DS_Store
+.env
 /.tags*
 /build
 /venderctl

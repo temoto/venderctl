@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -18,7 +19,10 @@ var log = log2.NewStderr(log2.LDebug)
 var commands = []cli.Cmd{
 	control.Cmd,
 	sponge.Cmd,
+	{Name: "version", Action: versionMain},
 }
+
+var BuildVersion string = "unknown" // set by ldflags -X
 
 func main() {
 	errors.SetSourceTrimPrefix(os.Getenv("source_trim_prefix"))
@@ -76,7 +80,8 @@ func main() {
 				os.Exit(0)
 			}
 
-			ctx, _ := state.NewContext(cmdName, log)
+			ctx, g := state.NewContext(cmdName, log)
+			g.BuildVersion = BuildVersion
 
 			if cli.SdNotify("start " + cmdName) {
 				// under systemd assume systemd journal logging, no timestamp
@@ -84,7 +89,9 @@ func main() {
 			} else {
 				log.SetFlags(log2.LInteractiveFlags)
 			}
-			// log.Debugf("starting %s", cmdName)
+			if c.Name != "version" {
+				log.Infof("venderctl version=%s starting %s", BuildVersion, cmdName)
+			}
 
 			err := c.Action(ctx, flags)
 			if err != nil {
@@ -97,4 +104,9 @@ func main() {
 	log.Errorf("unknown command=%s", cmdName)
 	flags.Usage()
 	os.Exit(1)
+}
+
+func versionMain(ctx context.Context, flags *flag.FlagSet) error {
+	fmt.Printf("venderctl %s\n", BuildVersion)
+	return nil
 }
