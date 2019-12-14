@@ -9,6 +9,10 @@ Goals:
 - send reports to government fiscal agency
 - (maybe) new dashboard, alerts
 
+Requires PostgreSQL 10+.
+
+Please see [venderctl.hcl](venderctl.hcl) for config example. Except noted, defaults are Go zero values: 0, false, "".
+
 
 # Flair
 
