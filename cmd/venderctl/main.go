@@ -25,7 +25,6 @@ var commands = []cli.Cmd{
 var BuildVersion string = "unknown" // set by ldflags -X
 
 func main() {
-	errors.SetSourceTrimPrefix(os.Getenv("source_trim_prefix"))
 	log.SetFlags(0)
 
 	flags := flag.NewFlagSet("venderctl", flag.ContinueOnError)

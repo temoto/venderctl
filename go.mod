@@ -1,6 +1,6 @@
 module github.com/temoto/venderctl
 
-go 1.12
+go 1.13
 
 require (
 	github.com/256dpi/gomqtt v0.12.2
