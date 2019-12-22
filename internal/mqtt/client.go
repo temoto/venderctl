@@ -41,7 +41,7 @@ type Client struct { //nolint:maligned
 
 	alive   *alive.Alive
 	conn    transport.Conn
-	dialer  transport.Dialer
+	dialer  *transport.Dialer
 	lastID  uint32
 	pubmu   sync.Mutex // serialize public API Publish()
 	tracker *client.Tracker
@@ -90,7 +90,10 @@ func (c *Client) Init() error {
 		return errors.Annotatef(err, "mqtt dial broker=%s", c.Config.BrokerURL)
 	}
 
-	c.dialer.TLSConfig = c.Config.TLS
+	c.dialer = transport.NewDialer(transport.DialConfig{
+		TLSConfig: c.Config.TLS,
+		Timeout:   c.Config.NetworkTimeout,
+	})
 	c.lastID = uint32(time.Now().UnixNano())
 	c.tracker = client.NewTracker(time.Duration(c.Config.KeepaliveSec) * time.Second)
 

@@ -1,7 +1,7 @@
-github.com/256dpi/gomqtt v0.12.2 h1:/heAnll2UrBesa9x1wgSaQxJMD+IVlPo9PnUsMP31S8=
-github.com/256dpi/gomqtt v0.12.2/go.mod h1:umNEh2nPBiUyN5uNnmkX6Tsf0Kx8/BWaJuNCIj1J+ks=
-github.com/256dpi/mercury v0.1.0 h1:4SqjOOOJUhi/TWGH277qi6TPJOPxp5NXm+NO0Rfvii8=
-github.com/256dpi/mercury v0.1.0/go.mod h1:W2/eVt6tqfSn5J8en63oGNmnZSb66PUo0e5YBzSHkkU=
+github.com/256dpi/gomqtt v0.13.0 h1:kpIBQ8oMyY3Wg+MqIpiH9Y2TTcjhw9Ed+CcoueOLiNk=
+github.com/256dpi/gomqtt v0.13.0/go.mod h1:vWiB7Vt8R/9Jx9WAD6YDvBN3SKzWMRbdOcLf0cbPUkI=
+github.com/256dpi/mercury v0.2.0 h1:ImB0JYuZ28kwp2MpqnMdQFSD3z9mgaNYHrSjYuyP0LI=
+github.com/256dpi/mercury v0.2.0/go.mod h1:xxgxZSQO7VUwxGLpk8yRVe/WF0MKH7nCIwSh4kUVMy4=
 github.com/abiosoft/ishell v2.0.0+incompatible/go.mod h1:HQR9AqF2R3P4XXpMpI0NAzgHf/aS6+zVXRj14cVk9qg=
 github.com/abiosoft/readline v0.0.0-20180607040430-155bce2042db/go.mod h1:rB3B4rKii8V21ydCbIzH5hZiCQE7f5E9SzUb/ZZx530=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
@@ -35,8 +35,8 @@ github.com/golang/protobuf v1.3.2 h1:6nsPYzhq5kReh6QImI3k5qWzO4PEbvbIW2cwSfR/6xs
 github.com/golang/protobuf v1.3.2/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db h1:woRePGFeVFfLKN/pOkfl+p/TAqKOfFu+7KPlMVpok/w=
 github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
-github.com/gorilla/websocket v1.3.0 h1:r/LXc0VJIMd0rCMsc6DxgczaQtoCwCLatnfXmSYcXx8=
-github.com/gorilla/websocket v1.3.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
+github.com/gorilla/websocket v1.4.1 h1:q7AeDBpnBk8AogcD4DSag/Ukw/KV+YhzLj2bP5HvKCM=
+github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/hpcloud/tail v1.0.0 h1:nfCOvKYfkgYP8hkirhJocXT2+zOD8yUNjXaWfTlyFKI=
