@@ -1,4 +1,4 @@
-package sponge
+package tele
 
 import (
 	"context"
@@ -7,16 +7,18 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/go-pg/pg/v9"
 	"github.com/golang/protobuf/proto"
+	"github.com/juju/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	tele_api "github.com/temoto/vender/head/tele/api"
-	"github.com/temoto/vender/log2"
 	"github.com/temoto/venderctl/internal/state"
+	state_new "github.com/temoto/venderctl/internal/state/new"
 )
 
 type MError struct { //nolint:maligned
@@ -50,10 +52,13 @@ type MTrans struct {
 	Options  []int32
 	Price    int32
 	Method   int32
+	TaxJobId int64
 }
 
-func TestSpongeDB(t *testing.T) {
-	if _, g := state.NewTestContext(t, ""); g.Config.DB.URL == "" {
+func TestTeleDB(t *testing.T) {
+	t.Parallel()
+
+	if _, g := state_new.NewTestContext(t, nil, ""); g.Config.DB.URL == "" {
 		t.Fatal("This test requires access to PostgreSQL server, please set environment venderctl_db_url=postgres://[USER[:PASS]@][HOST[:PORT]]/DATABASE?sslmode=disable")
 	}
 
@@ -62,7 +67,6 @@ func TestSpongeDB(t *testing.T) {
 		ctx    context.Context
 		g      *state.Global
 		dbConn *pg.Conn
-		app    appSponge
 	}
 
 	cases := []struct {
@@ -70,13 +74,13 @@ func TestSpongeDB(t *testing.T) {
 		config string
 		check  func(*tenv)
 	}{
-		{"error", "", func(env *tenv) {
+		{"error", `tele { listen "tcp://" {} }`, func(env *tenv) {
 			t := env.t
 			b, err := hex.DecodeString("080810ab92edc58d92eaef151a0912076578616d706c653a008a0105302e312e30")
 			require.NoError(t, err)
 			var tm tele_api.Telemetry
 			require.NoError(t, proto.Unmarshal(b, &tm))
-			require.NoError(t, env.app.onTelemetry(env.ctx, env.dbConn, tm.VmId, &tm))
+			require.NoError(t, onTelemetry(env.ctx, env.dbConn, tm.VmId, &tm))
 
 			var count int
 			_, err = env.dbConn.QueryOne(pg.Scan(&count), `select count(*) from trans`)
@@ -95,7 +99,7 @@ func TestSpongeDB(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, b, ingest.Raw)
 		}},
-		{"state", `sponge { exec_on_state="false" }`, func(env *tenv) {
+		{"state", `tele { exec_on_state="false" listen "tcp://" {} }`, func(env *tenv) {
 			t := env.t
 			vmid := rand.Int31()
 			var count int
@@ -105,19 +109,19 @@ func TestSpongeDB(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, int(0), count)
 
-			require.NoError(t, env.app.onState(env.ctx, env.dbConn, vmid, tele_api.State_Boot))
+			require.NoError(t, onState(env.ctx, env.dbConn, vmid, tele_api.State_Boot))
 			_, err = env.dbConn.QueryOne(st, `select * from state where vmid=?`, vmid)
 			require.NoError(t, err)
 			assert.Equal(t, vmid, st.VmId)
 			assert.Equal(t, tele_api.State_Boot, st.State)
 
-			require.NoError(t, env.app.onState(env.ctx, env.dbConn, vmid, tele_api.State_Nominal))
+			require.NoError(t, onState(env.ctx, env.dbConn, vmid, tele_api.State_Nominal))
 			_, err = env.dbConn.QueryOne(st, `select * from state where vmid=?`, vmid)
 			require.NoError(t, err)
 			assert.Equal(t, vmid, st.VmId)
 			assert.Equal(t, tele_api.State_Nominal, st.State)
 		}},
-		{"telemetry", "", func(env *tenv) {
+		{"telemetry", `tele { listen "tcp://" {} }`, func(env *tenv) {
 			t := env.t
 			b, err := hex.DecodeString("08f78c3d320518fc1108053a00")
 			require.NoError(t, err)
@@ -126,7 +130,7 @@ func TestSpongeDB(t *testing.T) {
 			// const q = `insert into trans (vmid,vmtime,received,menu_code,options,price,method) values (?0,to_timestamp(?1),current_timestamp,?2,?3,?4,?5)`
 			// sq := pg.SafeQuery(q, 1, tm.Time, tm.Transaction.Code, pg.Array(tm.Transaction.Options), tm.Transaction.Price, tm.Transaction.PaymentMethod).Value()
 			// t.Log(sq)
-			require.NoError(t, env.app.onTelemetry(env.ctx, env.dbConn, tm.VmId, &tm))
+			require.NoError(t, onTelemetry(env.ctx, env.dbConn, tm.VmId, &tm))
 
 			var tr MTrans
 			_, err = env.dbConn.QueryOne(&tr, `select * from trans where vmid=?`, tm.VmId)
@@ -143,12 +147,14 @@ func TestSpongeDB(t *testing.T) {
 	for _, c := range cases {
 		c := c
 		t.Run(c.name, func(t *testing.T) {
-			// t.Parallel() FIXME conflicts with pg.SetLogger()
-			pg.SetLogger(state.Log2stdlib(log2.NewTest(t, log2.LDebug)))
 			env := &tenv{t: t}
-			env.ctx, env.g = state.NewTestContext(t, c.config)
-			env.app = appSponge{g: env.g}
-			require.NoError(t, env.app.init(env.ctx))
+			env.ctx, env.g = state_new.NewTestContext(t, nil, c.config)
+			if err := teleInit(env.ctx); err != nil {
+				if strings.Contains(err.Error(), "db ping") && strings.Contains(err.Error(), "connection refused") {
+					err = errors.Annotatef(err, "please check database server at %s", env.g.Config.DB.URL)
+				}
+				require.NoError(t, err)
+			}
 
 			env.dbConn = env.g.DB.Conn()
 			_, err := env.dbConn.Exec("begin")

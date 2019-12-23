@@ -10,15 +10,20 @@ import (
 	"github.com/juju/errors"
 	"github.com/temoto/vender/log2"
 	"github.com/temoto/venderctl/cmd/internal/cli"
-	"github.com/temoto/venderctl/cmd/venderctl/control"
-	"github.com/temoto/venderctl/cmd/venderctl/sponge"
-	"github.com/temoto/venderctl/internal/state"
+	cmd_control "github.com/temoto/venderctl/cmd/venderctl/control"
+	cmd_passwd "github.com/temoto/venderctl/cmd/venderctl/passwd"
+	cmd_tax "github.com/temoto/venderctl/cmd/venderctl/tax"
+	cmd_tele "github.com/temoto/venderctl/cmd/venderctl/tele"
+	state_new "github.com/temoto/venderctl/internal/state/new"
+	"github.com/temoto/venderctl/internal/tele"
 )
 
 var log = log2.NewStderr(log2.LDebug)
 var commands = []cli.Cmd{
-	control.Cmd,
-	sponge.Cmd,
+	cmd_control.Cmd,
+	cmd_passwd.Cmd,
+	cmd_tax.Cmd,
+	cmd_tele.Cmd,
 	{Name: "version", Action: versionMain},
 }
 
@@ -49,8 +54,7 @@ func main() {
 
 	err := flags.Parse(os.Args[1:])
 	if err != nil {
-		if err == flag.ErrHelp {
-			flags.Usage()
+		if err == flag.ErrHelp { // usage is already printed
 			os.Exit(0)
 		}
 		log.Fatal(errors.ErrorStack(err))
@@ -79,7 +83,7 @@ func main() {
 				os.Exit(0)
 			}
 
-			ctx, g := state.NewContext(cmdName, log)
+			ctx, g := state_new.NewContext(cmdName, log, tele.NewTele())
 			g.BuildVersion = BuildVersion
 
 			if cli.SdNotify("start " + cmdName) {
@@ -94,7 +98,7 @@ func main() {
 
 			err := c.Action(ctx, flags)
 			if err != nil {
-				log.Fatal(errors.ErrorStack(err))
+				log.Fatalf("%s\nTrace:\n%s", err.Error(), errors.ErrorStack(err))
 			}
 			os.Exit(0) // success path
 		}

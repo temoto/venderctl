@@ -1,13 +1,7 @@
-// Stripped down MQTT client.
-// - Init() returns with result of first connect
-// - Subscribe once on connect
-// - Reconnect forever
-// - QOS 0,1
-// - No in-flight storage (except Publish call stack)
-// - No concurrent Publish (serialized)
 package mqtt
 
 import (
+	"context"
 	"crypto/tls"
 	"io"
 	"net/url"
@@ -19,10 +13,17 @@ import (
 	"github.com/256dpi/gomqtt/packet"
 	"github.com/256dpi/gomqtt/transport"
 	"github.com/juju/errors"
-	"github.com/temoto/alive"
+	"github.com/temoto/alive/v2"
 	"github.com/temoto/vender/log2"
 )
 
+// Stripped down MQTT client.
+// - Init() returns with result of first connect
+// - Subscribe once on connect
+// - Reconnect forever
+// - QOS 0,1
+// - No in-flight storage (except Publish call stack)
+// - No concurrent Publish (serialized)
 type Client struct { //nolint:maligned
 	sync.Mutex
 
@@ -33,9 +34,11 @@ type Client struct { //nolint:maligned
 		KeepaliveSec   uint16
 		TLS            *tls.Config
 		ClientID       string
+		Username       string
 		Password       string
 		Subscriptions  []packet.Subscription
 		OnMessage      func(*packet.Message) error
+		Will           *packet.Message
 	}
 	Log *log2.Log
 
@@ -62,6 +65,7 @@ type Client struct { //nolint:maligned
 	}
 }
 
+const DefaultNetworkTimeout = 30 * time.Second
 const DefaultReconnectDelay = 3 * time.Second
 
 const (
@@ -82,12 +86,21 @@ const (
 func (c *Client) Init() error {
 	c.alive = alive.NewAlive()
 
+	if c.Config.OnMessage == nil {
+		return errors.NotValidf("code error mqtt.Client.Config.OnMessage=nil")
+	}
+	if c.Config.NetworkTimeout == 0 {
+		c.Config.NetworkTimeout = DefaultNetworkTimeout
+	}
 	if c.Config.ReconnectDelay == 0 {
 		c.Config.ReconnectDelay = DefaultReconnectDelay
 	}
 
-	if _, err := url.ParseRequestURI(c.Config.BrokerURL); err != nil {
+	if u, err := url.ParseRequestURI(c.Config.BrokerURL); err != nil {
 		return errors.Annotatef(err, "mqtt dial broker=%s", c.Config.BrokerURL)
+	} else if u.User != nil && c.Config.Username == "" && c.Config.Password == "" {
+		c.Config.Username = u.User.Username()
+		c.Config.Password, _ = u.User.Password()
 	}
 
 	c.dialer = transport.NewDialer(transport.DialConfig{
@@ -97,14 +110,14 @@ func (c *Client) Init() error {
 	c.lastID = uint32(time.Now().UnixNano())
 	c.tracker = client.NewTracker(time.Duration(c.Config.KeepaliveSec) * time.Second)
 
-	c.flowConnect.ch = make(chan *packet.Connack)
+	c.flowConnect.ch = make(chan *packet.Connack, 1)
 	c.flowConnect.packet = packet.NewConnect()
-	c.flowConnect.packet.ClientID = c.Config.ClientID
-	c.flowConnect.packet.KeepAlive = uint16(c.Config.KeepaliveSec + 1)
+	c.flowConnect.packet.ClientID = defaultString(c.Config.ClientID, c.Config.Username)
+	c.flowConnect.packet.KeepAlive = uint16(c.Config.KeepaliveSec)
 	c.flowConnect.packet.CleanSession = true
-	c.flowConnect.packet.Username = c.Config.ClientID
+	c.flowConnect.packet.Username = c.Config.Username
 	c.flowConnect.packet.Password = c.Config.Password
-	// c.flowConnect.packet.Will = config.WillMessage
+	c.flowConnect.packet.Will = c.Config.Will
 	c.flowConnect.state = clientInitialized
 
 	c.flowPublish.wake = make(chan struct{})
@@ -133,7 +146,7 @@ func (c *Client) Close() error {
 	return err
 }
 
-func (c *Client) Publish(msg *packet.Message) error {
+func (c *Client) Publish(ctx context.Context, msg *packet.Message) error {
 	if msg.QOS >= packet.QOSExactlyOnce {
 		panic("code error QOS ExactlyOnce not implemented")
 	}
@@ -201,15 +214,16 @@ func (c *Client) connect() error {
 	}
 
 	atomic.StoreUint32(&c.flowConnect.state, clientConnecting)
-	conn, err := c.dialer.Dial(c.Config.BrokerURL)
-	if err != nil {
+	var err error
+	if c.conn, err = c.dialer.Dial(c.Config.BrokerURL); err != nil {
 		return errors.Annotatef(err, "mqtt dial broker=%s", c.Config.BrokerURL)
 	}
-	c.conn = conn
-	if err := c.send(c.flowConnect.packet); err != nil {
+	if err = c.send(c.flowConnect.packet); err != nil {
 		return err
 	}
-	c.alive.Add(2)
+	if !c.alive.Add(2) {
+		return context.Canceled
+	}
 	go c.pinger()
 	go c.reader()
 	select {
@@ -217,7 +231,8 @@ func (c *Client) connect() error {
 		c.Log.Debugf("mqtt CONNACK=%v", connack)
 		// return connection denied error and close connection if not accepted
 		if connack.ReturnCode != packet.ConnectionAccepted {
-			return c.fatal(client.ErrClientConnectionDenied)
+			err = errors.Annotate(client.ErrClientConnectionDenied, connack.ReturnCode.String())
+			return c.fatal(err)
 		}
 		atomic.StoreUint32(&c.flowConnect.state, clientConnected)
 	case <-time.After(connectTimeout):
@@ -231,6 +246,9 @@ func (c *Client) connect() error {
 
 func (c *Client) disconnect(err error) error {
 	atomic.StoreUint32(&c.flowConnect.state, clientDisconnected)
+	if err == nil {
+		_ = c.conn.Send(packet.NewDisconnect(), false)
+	}
 	connErr := c.conn.Close()
 	if connErr != nil {
 		c.Log.Errorf("mqtt conn.Close err=%v", connErr)
@@ -257,26 +275,29 @@ func (c *Client) pinger() {
 	defer c.alive.Done()
 	stopch := c.alive.StopChan()
 	for {
-		if atomic.LoadUint32(&c.flowConnect.state) == clientDisconnected {
+		state := atomic.LoadUint32(&c.flowConnect.state)
+		if state == clientDisconnected {
 			return
 		}
 
 		window := c.tracker.Window()
-		if window < 0 {
-			if c.tracker.Pending() {
-				_ = c.disconnect(client.ErrClientMissingPong)
-				return
-			}
+		if state == clientConnacked {
+			if window < 0 {
+				if c.tracker.Pending() {
+					_ = c.disconnect(client.ErrClientMissingPong)
+					return
+				}
 
-			err := c.send(packet.NewPingreq())
-			if err != nil {
-				// TODO retry
-				c.Log.Errorf("mqtt pinger send err=%v", err)
+				err := c.send(packet.NewPingreq())
+				if err != nil {
+					// TODO retry
+					c.Log.Errorf("mqtt pinger send err=%v", err)
+				} else {
+					c.tracker.Ping()
+				}
 			} else {
-				c.tracker.Ping()
+				c.Log.Debugf("mqtt KeepAlive delay=%s", window.String())
 			}
-		} else {
-			c.Log.Debugf("mqtt KeepAlive delay=%s", window.String())
 		}
 
 		select {
@@ -315,7 +336,7 @@ func (c *Client) reader() {
 			_ = c.disconnect(err)
 			return
 		}
-		c.Log.Debugf("mqtt received=%s", pkt.String())
+		c.Log.Debugf("mqtt received=%s", packetString(pkt))
 
 		// call handlers for packet types and ignore other packets
 		switch typedPkt := pkt.(type) {
@@ -392,7 +413,7 @@ func (c *Client) send(pkt packet.Generic) error {
 		return err
 	}
 
-	c.Log.Debugf("mqtt sent=%s", pkt.String())
+	c.Log.Debugf("mqtt sent=%s", packetString(pkt))
 	return nil
 }
 
@@ -427,15 +448,14 @@ func (c *Client) worker(initChan chan<- error) {
 	first := true
 	for c.alive.IsRunning() {
 		err := c.connect()
-		if err == nil {
-			err = c.subscribe(c.Config.Subscriptions)
-			if err != nil {
+		if err != nil {
+			c.Log.Errorf("mqtt worker connect err=%v", err)
+		} else if len(c.Config.Subscriptions) > 0 {
+			if err = c.subscribe(c.Config.Subscriptions); err != nil {
 				err = errors.Annotate(err, "mqtt worker subscribe")
 			} else {
 				c.Log.Debugf("mqtt subscribe success")
 			}
-		} else {
-			c.Log.Errorf("mqtt worker connect err=%v", err)
 		}
 		if first {
 			first = false
@@ -447,4 +467,11 @@ func (c *Client) worker(initChan chan<- error) {
 		c.alive.WaitTasks()
 	}
 	_ = c.disconnect(nil)
+}
+
+func defaultString(main, def string) string {
+	if main == "" {
+		return def
+	}
+	return main
 }

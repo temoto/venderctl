@@ -10,37 +10,83 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 
+	"github.com/256dpi/gomqtt/packet"
 	"github.com/golang/protobuf/proto"
 	"github.com/juju/errors"
-	tele_api "github.com/temoto/vender/head/tele/api"
+	"github.com/temoto/alive/v2"
+	vender_api "github.com/temoto/vender/head/tele/api"
 	"github.com/temoto/vender/log2"
+	"github.com/temoto/venderctl/internal/mqtt"
+	tele_api "github.com/temoto/venderctl/internal/tele/api"
 	tele_config "github.com/temoto/venderctl/internal/tele/config"
 )
 
-type Tele struct {
-	log       *log2.Log
-	transport transporter
+const defaultSendTimeout = 30 * time.Second
+const defaultNetworkTimeout = 3 * time.Second
+
+type tele struct { //nolint:maligned
+	sync.RWMutex
+	alive   *alive.Alive
+	conf    tele_config.Config
+	log     *log2.Log
+	pch     chan tele_api.Packet
+	mqttsrv *mqtt.Server
+	mqttcli *mqtt.Client
+	mqttcom interface {
+		Close() error
+		Publish(context.Context, *packet.Message) error
+	}
+	secrets Secrets
 }
 
-func (self *Tele) Init(ctx context.Context, log *log2.Log, teleConfig tele_config.Config) error {
-	self.log = log.Clone(log2.LDebug)
-	// test code sets .transport
-	if self.transport == nil { // production path
-		self.transport = &transportMqtt{}
+func NewTele() tele_api.Teler { return &tele{} }
+
+func (self *tele) Init(ctx context.Context, log *log2.Log, teleConfig tele_config.Config) error {
+	self.Lock()
+	defer self.Unlock()
+
+	self.alive = alive.NewAlive()
+	self.conf = teleConfig
+	self.log = log.Clone(log2.LInfo)
+	if self.conf.LogDebug {
+		self.log.SetLevel(log2.LDebug)
 	}
-	if err := self.transport.Init(ctx, log, teleConfig); err != nil {
-		return errors.Annotate(err, "tele.Init")
-	}
-	return nil
+	self.pch = make(chan tele_api.Packet, 1)
+
+	err := self.mqttInit(ctx, log)
+	return errors.Annotate(err, "tele.Init")
 }
 
-func (self *Tele) Close() error { return self.transport.Close() }
+func (self *tele) Close() error {
+	switch self.conf.Mode {
+	case tele_config.ModeDisabled:
+		return nil
+	case tele_config.ModeClient, tele_config.ModeServer:
+		return self.mqttcom.Close()
+	default:
+		panic(self.msgInvalidMode())
+	}
+}
 
-func (self *Tele) Chan() <-chan Packet { return self.transport.RecvChan() }
+func (self *tele) Addrs() []string {
+	switch self.conf.Mode {
+	case tele_config.ModeDisabled, tele_config.ModeClient:
+		return nil
+	case tele_config.ModeServer:
+		self.RLock()
+		defer self.RUnlock()
+		return self.mqttsrv.Addrs()
+	default:
+		panic(self.msgInvalidMode())
+	}
+}
 
-func (self *Tele) SendCommand(vmid int32, c *tele_api.Command) error {
+func (self *tele) Chan() <-chan tele_api.Packet { return self.pch }
+
+func (self *tele) SendCommand(vmid int32, c *vender_api.Command) error {
 	if c.Id == 0 {
 		c.Id = rand.Uint32()
 	}
@@ -52,13 +98,15 @@ func (self *Tele) SendCommand(vmid int32, c *tele_api.Command) error {
 	if err != nil {
 		return errors.Trace(err)
 	}
-	p := Packet{Kind: PacketCommand, VmId: vmid, Payload: payload}
-	err = self.transport.Send(p)
+	p := tele_api.Packet{Kind: tele_api.PacketCommand, VmId: vmid, Payload: payload}
+	ctx, cancel := context.WithTimeout(context.Background(), defaultSendTimeout)
+	defer cancel()
+	err = self.mqttSend(ctx, p)
 	return errors.Annotate(err, "tele.SendCommand")
 }
 
 // Will consume and drop irrelevant packets from pch.
-func (self *Tele) CommandTx(vmid int32, c *tele_api.Command, timeout time.Duration) (*tele_api.Response, error) {
+func (self *tele) CommandTx(vmid int32, c *vender_api.Command, timeout time.Duration) (*vender_api.Response, error) {
 	if c.Deadline == 0 {
 		c.Deadline = time.Now().Add(timeout).UnixNano()
 	}
@@ -70,7 +118,7 @@ func (self *Tele) CommandTx(vmid int32, c *tele_api.Command, timeout time.Durati
 	defer tmr.Stop()
 	for {
 		select {
-		case p := <-self.Chan():
+		case p := <-self.pch:
 			// if p.Kind == tele.PacketCommandReply {
 			if r, err := p.CommandResponse(); err == nil {
 				if r.CommandId == c.Id {
@@ -89,4 +137,8 @@ func (self *Tele) CommandTx(vmid int32, c *tele_api.Command, timeout time.Durati
 			return nil, errors.Timeoutf("response")
 		}
 	}
+}
+
+func (self *tele) msgInvalidMode() string {
+	return fmt.Sprintf("code error tele Config.Mode='%s'", self.conf.Mode)
 }

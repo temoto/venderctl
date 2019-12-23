@@ -10,6 +10,9 @@ require (
 	github.com/hashicorp/hcl v1.0.0
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
 	github.com/stretchr/testify v1.4.0
-	github.com/temoto/alive v1.1.0
-	github.com/temoto/vender v0.191120.0
+	github.com/temoto/alive/v2 v2.0.0
+	github.com/temoto/vender v0.191219.0
+	gopkg.in/hlandau/easymetric.v1 v1.0.0 // indirect
+	gopkg.in/hlandau/measurable.v1 v1.0.1 // indirect
+	gopkg.in/hlandau/passlib.v1 v1.0.10
 )

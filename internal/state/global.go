@@ -8,10 +8,10 @@ import (
 
 	"github.com/go-pg/pg/v9"
 	"github.com/juju/errors"
-	"github.com/temoto/alive"
+	"github.com/temoto/alive/v2"
 	"github.com/temoto/vender/helpers"
 	"github.com/temoto/vender/log2"
-	"github.com/temoto/venderctl/internal/tele"
+	tele_api "github.com/temoto/venderctl/internal/tele/api"
 )
 
 type Global struct {
@@ -20,63 +20,20 @@ type Global struct {
 	Config       *Config
 	DB           *pg.DB
 	Log          *log2.Log
-	Tele         *tele.Tele
+	Tele         tele_api.Teler
 }
 
-const contextKey = "run/state-global"
-
-func NewContext(tag string, log *log2.Log) (context.Context, *Global) {
-	if log == nil {
-		panic("code error state.NewContext() log=nil")
-	}
-
-	g := &Global{
-		Alive: alive.NewAlive(),
-		Log:   log,
-		Tele:  new(tele.Tele),
-	}
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, log2.ContextKey, log)
-	ctx = context.WithValue(ctx, contextKey, g)
-
-	return ctx, g
-}
+const ContextKey = "run/state-global"
 
 func GetGlobal(ctx context.Context) *Global {
-	v := ctx.Value(contextKey)
+	v := ctx.Value(ContextKey)
 	if v == nil {
-		panic(fmt.Sprintf("context['%s'] is nil", contextKey))
+		panic(fmt.Sprintf("context['%s'] is nil", ContextKey))
 	}
 	if g, ok := v.(*Global); ok {
 		return g
 	}
-	panic(fmt.Sprintf("context['%s'] expected type *Global actual=%#v", contextKey, v))
-}
-
-// If `Init` fails, consider `Global` is in broken state.
-func (g *Global) Init(ctx context.Context, cfg *Config) error {
-	g.Config = cfg
-
-	if g.Config.Persist.Root == "" {
-		g.Config.Persist.Root = "./tmp-vender-db"
-		g.Log.Errorf("config: persist.root=empty changed=%s", g.Config.Persist.Root)
-		// return errors.Errorf("config: persist.root=empty")
-	}
-	g.Log.Debugf("config: persist.root=%s", g.Config.Persist.Root)
-
-	errs := make([]error, 0)
-	if cfg.Tele.Enable {
-		errs = append(errs, g.Tele.Init(ctx, g.Log, cfg.Tele))
-	}
-
-	return helpers.FoldErrors(errs)
-}
-
-func (g *Global) MustInit(ctx context.Context, cfg *Config) {
-	err := g.Init(ctx, cfg)
-	if err != nil {
-		g.Log.Fatal(errors.ErrorStack(err))
-	}
+	panic(fmt.Sprintf("context['%s'] expected type *Global actual=%#v", ContextKey, v))
 }
 
 func (g *Global) InitDB(cmdName string) error {

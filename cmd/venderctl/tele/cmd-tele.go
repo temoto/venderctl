@@ -1,5 +1,6 @@
-// Sponge job is to listen network for incoming telemetry and save into database.
-package sponge
+package tele
+
+// Tele listens network for incoming telemetry and saves into database.
 
 import (
 	"context"
@@ -14,68 +15,66 @@ import (
 	pg_types "github.com/go-pg/pg/v9/types"
 	"github.com/golang/protobuf/proto"
 	"github.com/juju/errors"
-	tele_api "github.com/temoto/vender/head/tele/api"
+	vender_api "github.com/temoto/vender/head/tele/api"
 	"github.com/temoto/vender/helpers"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
-	"github.com/temoto/venderctl/internal/tele"
+	tele_api "github.com/temoto/venderctl/internal/tele/api"
 )
 
-const CmdName = "sponge"
+const CmdName = "tele"
 
 var Cmd = cli.Cmd{
 	Name:   CmdName,
-	Desc:   "telemetry network -> save to database",
-	Action: Main,
+	Desc:   "telemetry server -> save to database",
+	Action: teleMain,
 }
 
-func Main(ctx context.Context, flags *flag.FlagSet) error {
+func teleMain(ctx context.Context, flags *flag.FlagSet) error {
 	g := state.GetGlobal(ctx)
-	app := &appSponge{g: g}
 
 	configPath := flags.Lookup("config").Value.String()
-	config := state.MustReadConfig(g.Log, state.NewOsFullReader(), configPath)
-	config.Tele.Enable = true
-	config.Tele.MqttSubscribe = []string{"+/w/+"}
-	g.MustInit(ctx, config)
+	g.Config = state.MustReadConfig(g.Log, state.NewOsFullReader(), configPath)
+	if err := g.Config.Tele.EnableServer(); err != nil {
+		return errors.Annotate(err, "tele EnableServer")
+	}
 	g.Log.Debugf("config=%+v", g.Config)
 
-	if err := app.init(ctx); err != nil {
-		return errors.Annotate(err, "app.init")
+	if err := teleInit(ctx); err != nil {
+		return errors.Annotate(err, "teleInit")
 	}
-	return app.loop(ctx)
+	return teleLoop(ctx)
 }
 
-// runtime irrelevant in Global
-type appSponge struct {
-	g *state.Global
-}
-
-func (app *appSponge) init(ctx context.Context) error {
-	if err := app.g.InitDB(CmdName); err != nil {
-		return errors.Annotate(err, "sponge init")
+func teleInit(ctx context.Context) error {
+	g := state.GetGlobal(ctx)
+	if err := g.InitDB(CmdName); err != nil {
+		return errors.Annotate(err, "InitDB")
+	}
+	if err := g.Config.Tele.EnableServer(); err != nil {
+		return errors.Annotate(err, "Tele.EnableServer")
+	}
+	if err := g.Tele.Init(ctx, g.Log, g.Config.Tele); err != nil {
+		return errors.Annotate(err, "Tele.Init")
 	}
 
 	cli.SdNotify(daemon.SdNotifyReady)
-	app.g.Log.Debugf("sponge init complete")
+	g.Log.Debugf("tele init complete")
 	return nil
 }
 
-func (app *appSponge) loop(ctx context.Context) error {
+func teleLoop(ctx context.Context) error {
 	g := state.GetGlobal(ctx)
 	ch := g.Tele.Chan()
 	stopch := g.Alive.StopChan()
 
-	ll := g.DB.Listen("trans")
-	defer ll.Close()
-
 	for {
 		select {
 		case p := <-ch:
-			app.g.Log.Debugf("tele packet=%s", p.String())
+			g.Log.Debugf("tele packet=%s", p.String())
 
 			g.Alive.Add(1)
-			err := app.onPacket(ctx, p)
+			err := onPacket(ctx, p)
 			g.Alive.Done()
 			if err != nil {
 				g.Log.Error(errors.ErrorStack(err))
@@ -87,55 +86,59 @@ func (app *appSponge) loop(ctx context.Context) error {
 	}
 }
 
-func (app *appSponge) onPacket(ctx context.Context, p tele.Packet) error {
-	dbConn := app.g.DB.Conn()
+func onPacket(ctx context.Context, p tele_api.Packet) error {
+	g := state.GetGlobal(ctx)
+	dbConn := g.DB.Conn()
 	defer dbConn.Close()
 
 	switch p.Kind {
-	case tele.PacketState:
+	case tele_api.PacketState:
 		s, err := p.State()
 		if err != nil {
 			return err
 		}
-		return app.onState(ctx, dbConn, p.VmId, s)
+		return onState(ctx, dbConn, p.VmId, s)
 
-	case tele.PacketTelemetry:
+	case tele_api.PacketTelemetry:
 		t, err := p.Telemetry()
 		if err != nil {
 			return err
 		}
-		return app.onTelemetry(ctx, dbConn, p.VmId, t)
+		return onTelemetry(ctx, dbConn, p.VmId, t)
 
 	default:
 		return errors.Errorf("code error invalid packet=%v", p)
 	}
 }
 
-func (app *appSponge) onState(ctx context.Context, dbConn *pg.Conn, vmid int32, state tele_api.State) error {
-	app.g.Log.Infof("vm=%d state=%s", vmid, state.String())
+func onState(ctx context.Context, dbConn *pg.Conn, vmid int32, s vender_api.State) error {
+	g := state.GetGlobal(ctx)
+	g.Log.Infof("vm=%d state=%s", vmid, s.String())
 
-	dbConn = dbConn.WithParam("vmid", vmid).WithParam("state", state)
-	var old_state tele_api.State
-	_, err := dbConn.Query(pg.Scan(&old_state), `select state_update(?vmid, ?state)`)
+	dbConn = dbConn.WithParam("vmid", vmid).WithParam("state", s)
+	var oldState vender_api.State
+	_, err := dbConn.Query(pg.Scan(&oldState), `select state_update(?vmid, ?state)`)
 	err = errors.Annotatef(err, "db state_update")
-	// app.g.Log.Infof("vm=%d old_state=%s", vmid, old_state.String())
+	// g.Log.Infof("vm=%d old_state=%s", vmid, old_state.String())
 
-	if app.g.Config.Sponge.ExecOnState != "" {
-		cmd := exec.Command(app.g.Config.Sponge.ExecOnState)
+	if g.Config.Tele.ExecOnState != "" {
+		// Exec user supplied program is potential security issue.
+		// TODO explore hardening options like sudo
+		cmd := exec.Command(g.Config.Tele.ExecOnState) //nolint:gosec
 		cmd.Env = []string{
 			fmt.Sprintf("db_updated=%t", err == nil),
 			fmt.Sprintf("vmid=%d", vmid),
-			fmt.Sprintf("new=%d", state),
-			fmt.Sprintf("prev=%d", old_state),
+			fmt.Sprintf("new=%d", s),
+			fmt.Sprintf("prev=%d", oldState),
 		}
-		app.g.Alive.Add(1)
+		g.Alive.Add(1)
 		go func() {
-			defer app.g.Alive.Done()
+			defer g.Alive.Done()
 			execOutput, execErr := cmd.CombinedOutput()
 			prettyEnv := strings.Join(cmd.Env, " ")
 			if execErr != nil {
 				execErr = errors.Annotatef(execErr, "exec_on_state %s %s output=%s", prettyEnv, cmd.Path, execOutput)
-				app.g.Log.Error(execErr)
+				g.Log.Error(execErr)
 			}
 		}()
 	}
@@ -143,8 +146,9 @@ func (app *appSponge) onState(ctx context.Context, dbConn *pg.Conn, vmid int32, 
 	return err
 }
 
-func (app *appSponge) onTelemetry(ctx context.Context, dbConn *pg.Conn, vmid int32, t *tele_api.Telemetry) error {
-	app.g.Log.Infof("vm=%d telemetry=%s", vmid, t.String())
+func onTelemetry(ctx context.Context, dbConn *pg.Conn, vmid int32, t *vender_api.Telemetry) error {
+	g := state.GetGlobal(ctx)
+	g.Log.Infof("vm=%d telemetry=%s", vmid, t.String())
 
 	dbConn = dbConn.WithParam("vmid", vmid).WithParam("vmtime", t.Time)
 	errs := make([]error, 0)

@@ -13,6 +13,7 @@ import (
 	tele_api "github.com/temoto/vender/head/tele/api"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
+	tele_config "github.com/temoto/venderctl/internal/tele/config"
 )
 
 const replyTimeout = 51 * time.Second
@@ -27,10 +28,10 @@ var Cmd = cli.Cmd{
 	Name:   "control",
 	Desc:   "send commands to vending machines",
 	Usage:  cmdUsage,
-	Action: Main,
+	Action: controlMain,
 }
 
-func Main(ctx context.Context, flags *flag.FlagSet) error {
+func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 	const argOffset = 1 // Arg(0)=.Name
 	var targetId int32
 	target := flags.Arg(argOffset)
@@ -48,11 +49,14 @@ func Main(ctx context.Context, flags *flag.FlagSet) error {
 	}
 
 	configPath := flags.Lookup("config").Value.String()
-	config := state.MustReadConfig(g.Log, state.NewOsFullReader(), configPath)
-	config.Tele.Enable = true
-	config.Tele.MqttSubscribe = []string{fmt.Sprintf("vm%d/cr/+", targetId)}
-	g.MustInit(ctx, config)
-	g.Log.Debugf("config=%+v", g.Config)
+	g.Config = state.MustReadConfig(g.Log, state.NewOsFullReader(), configPath)
+	if err := g.Config.Tele.EnableClient(tele_config.RoleControl); err != nil {
+		return err
+	}
+	if err := g.Tele.Init(ctx, g.Log, g.Config.Tele); err != nil {
+		return err
+	}
+	// g.Log.Debugf("config=%+v", g.Config)
 
 	switch cmd {
 	case "report":
@@ -116,6 +120,7 @@ func Main(ctx context.Context, flags *flag.FlagSet) error {
 		return err
 
 	default:
+		flags.Usage()
 		return fmt.Errorf("unknown control command=%s", cmd)
 	}
 }

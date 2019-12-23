@@ -3,10 +3,10 @@
 Open source vending machine data processing server. The backend for https://github.com/temoto/vender
 
 Goals:
-- [cmd/sponge] receive telemetry from Vender VMC
-- send remote control commands to vending machines
+- [cmd/tele] receive telemetry from Vender VMC
+- [cmd/control] send remote control commands to vending machines
+- [cmd/tax] send reports to government fiscal agency
 - load telemetry data into existing legacy dashboard
-- send reports to government fiscal agency
 - (maybe) new dashboard, alerts
 
 Requires PostgreSQL 10+.

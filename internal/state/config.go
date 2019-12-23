@@ -1,6 +1,7 @@
 package state
 
 import (
+	"net/http"
 	"path/filepath"
 	"sync"
 
@@ -27,9 +28,6 @@ type Config struct {
 	}
 	Persist struct {
 		Root string `hcl:"root"`
-	}
-	Sponge struct {
-		ExecOnState string `hcl:"exec_on_state"`
 	}
 	Tele tele_config.Config
 
