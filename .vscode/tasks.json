@@ -1,0 +1,31 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "type": "shell",
+            "command": "script/build",
+            "problemMatcher": [
+                "$go"
+            ]
+        },
+        {
+            "label": "test",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "type": "shell",
+            "command": "env -S $(cat .env) go test -trimpath -timeout=7s -race ./...",
+            "problemMatcher": [
+                "$go"
+            ]
+        }
+    ]
+}

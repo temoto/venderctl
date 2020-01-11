@@ -1,0 +1,16 @@
+{
+    "go.autocompleteUnimportedPackages": true,
+    "go.buildFlags": [
+        "-race"
+    ],
+    "go.formatFlags": [
+        "-s"
+    ],
+    "go.formatTool": "goimports",
+    "go.installDependenciesWhenBuilding": false,
+    "go.lintTool": "golangci-lint",
+    "go.testEnvFile": ".env",
+    "go.testTimeout": "15s",
+    "go.useCodeSnippetsOnFunctionSuggest": true,
+    "go.useCodeSnippetsOnFunctionSuggestWithoutType": true
+}
