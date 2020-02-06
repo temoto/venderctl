@@ -10,6 +10,18 @@ money {
   scale = 100
 }
 
+tax {
+  ru2019 {
+    tag1018 = ""
+    tag1055 = 2
+    tag1199 = 6
+
+    umka {
+      base_url = "http://70:70@office.armax.ru:58088"
+    }
+  }
+}
+
 tele {
   // Only these variables passed as environment:
   // db_updated=true  if state successfully written to database

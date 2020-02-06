@@ -11,6 +11,7 @@ require (
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
 	github.com/stretchr/testify v1.4.0
 	github.com/temoto/alive/v2 v2.0.0
+	github.com/temoto/ru-nalog-go v0.6.1-0.20200126230605-d6d5bfc79675
 	github.com/temoto/vender v0.191219.0
 	gopkg.in/hlandau/easymetric.v1 v1.0.0 // indirect
 	gopkg.in/hlandau/measurable.v1 v1.0.1 // indirect

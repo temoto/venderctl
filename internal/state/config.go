@@ -26,8 +26,17 @@ type Config struct {
 	Money struct {
 		Scale int `hcl:"scale"`
 	}
-	Persist struct {
-		Root string `hcl:"root"`
+	Tax struct {
+		Ru2019 struct {
+			Tag1018 string
+			Tag1055 int // uint32
+			Tag1199 int // uint32
+			Umka    struct {
+				BaseURL string `hcl:"base_url"`
+
+				XXX_testRT http.RoundTripper `hcl:"-"`
+			}
+		}
 	}
 	Tele tele_config.Config
 

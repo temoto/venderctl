@@ -87,6 +87,8 @@ github.com/temoto/extremofile v0.5.0/go.mod h1:kvFLb1SHVqYRp91AnHNn1OA9o8I1ZHMMO
 github.com/temoto/gpio-cdev-go v0.12.1-0.20191005112838-85f703f8e92e/go.mod h1:+vXZ39ODGFfxfkL3SphEBCDXXTUIOuyUbGX4mES6Jhw=
 github.com/temoto/inputevent-go v1.0.0/go.mod h1:RY5lgc0aR8Ouq8WUDe5E4Mo7D8NN9Czh7xpr+uCQxTo=
 github.com/temoto/iodin v0.0.0-20190211111721-99c87617ba86/go.mod h1:PSCCOZs9yzxJX2JS1q+rk6pzNvFhs5HGfpnAmsELeMY=
+github.com/temoto/ru-nalog-go v0.6.1-0.20200126230605-d6d5bfc79675 h1:WXGyy/+sYZrm1ECaaZ36mJDKkVXziHAJMP3zhC7geTs=
+github.com/temoto/ru-nalog-go v0.6.1-0.20200126230605-d6d5bfc79675/go.mod h1:dSD3JpwDLmkzjZZAkbJsC2ivLIM/dv2P51TO3y85PAQ=
 github.com/temoto/spq v0.10.0/go.mod h1:LbzRQb1nFUnE3OdI4mhjcRBrD7G0ZtIO2nqtgs0ZK2U=
 github.com/temoto/vender v0.191219.0 h1:uCnoFvaUp9Z8+2WvY52SI2eErrPj474MJrsKx5uohow=
 github.com/temoto/vender v0.191219.0/go.mod h1:8GTiJ/EX/Grsor2+5ovu7sl1OOYln4EIjABvreZeAGg=
