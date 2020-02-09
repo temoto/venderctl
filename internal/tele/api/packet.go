@@ -5,7 +5,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/juju/errors"
-	vender_api "github.com/temoto/vender/head/tele/api"
+	vender_api "github.com/temoto/vender/tele"
 )
 
 //go:generate stringer -type=PacketKind -trimprefix=Packet

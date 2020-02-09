@@ -13,7 +13,7 @@ import (
 	"github.com/juju/errors"
 	"github.com/temoto/vender/helpers"
 	"github.com/temoto/vender/log2"
-	"github.com/temoto/venderctl/internal/mqtt"
+	"github.com/temoto/vender/tele/mqtt"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
 	tele_config "github.com/temoto/venderctl/internal/tele/config"
 	"gopkg.in/hlandau/passlib.v1"
@@ -65,8 +65,11 @@ func (self *tele) mqttInitClient(ctx context.Context, mlog *log2.Log) error {
 }
 
 func (self *tele) mqttInitServer(ctx context.Context, mlog *log2.Log) error {
-	self.mqttsrv = mqtt.NewServer(&mqtt.ServerOptions{
-		Log:       mlog,
+	self.mqttsrv = mqtt.NewServer(mqtt.ServerOptions{
+		Log: mlog,
+		ForceSubs: []packet.Subscription{
+			{Topic: "%c/r/#", QOS: packet.QOSAtLeastOnce},
+		},
 		OnAuth:    self.mqttOnAuth,
 		OnPublish: self.mqttServerOnPublish,
 	})
@@ -164,7 +167,7 @@ func (self *tele) mqttClientOnPublish(msg *packet.Message) error {
 }
 
 func (self *tele) mqttServerOnPublish(ctx context.Context, msg *packet.Message, ack *future.Future) error {
-	defer ack.Cancel()
+	defer ack.Cancel(context.Canceled)
 	if !self.alive.Add(1) {
 		return context.Canceled
 	}
@@ -177,12 +180,12 @@ func (self *tele) mqttServerOnPublish(ctx context.Context, msg *packet.Message, 
 	case nil:
 		if p.Kind == tele_api.PacketInvalid {
 			// parsePacket -> nil,nil means tele is not interested in that MQTT message
-			ack.Complete()
+			ack.Complete(nil)
 			return nil
 		}
 
 	case errTopicIgnore:
-		ack.Complete()
+		ack.Complete(nil)
 		return nil
 
 	default:
@@ -197,7 +200,7 @@ func (self *tele) mqttServerOnPublish(ctx context.Context, msg *packet.Message, 
 		select {
 		case self.pch <- p:
 			t.Stop()
-			ack.Complete()
+			ack.Complete(nil)
 			return nil
 
 		case <-t.C:

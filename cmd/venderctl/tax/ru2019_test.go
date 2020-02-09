@@ -16,8 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/temoto/ru-nalog-go/umka"
+	"github.com/temoto/vender/helpers"
 	state_new "github.com/temoto/venderctl/internal/state/new"
-	"github.com/temoto/venderctl/internal/toolpool"
 )
 
 func TestRu2019(t *testing.T) {
@@ -28,7 +28,7 @@ tag1055 = 2
 tag1199 = 6
 umka { base_url="mock:" }
 }}`)
-	g.Config.Tax.Ru2019.Umka.XXX_testRT = &toolpool.MockHTTP{
+	g.Config.Tax.Ru2019.Umka.XXX_testRT = &helpers.MockHTTP{
 		Fun: func(req *http.Request) (*http.Response, error) {
 			t.Logf("umka < %s", req.URL.String())
 			statusCode := http.StatusOK

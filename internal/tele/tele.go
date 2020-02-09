@@ -17,9 +17,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/juju/errors"
 	"github.com/temoto/alive/v2"
-	vender_api "github.com/temoto/vender/head/tele/api"
 	"github.com/temoto/vender/log2"
-	"github.com/temoto/venderctl/internal/mqtt"
+	vender_api "github.com/temoto/vender/tele"
+	"github.com/temoto/vender/tele/mqtt"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
 	tele_config "github.com/temoto/venderctl/internal/tele/config"
 )

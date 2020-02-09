@@ -16,7 +16,7 @@ import (
 	"github.com/juju/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	tele_api "github.com/temoto/vender/head/tele/api"
+	tele_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/internal/state"
 	state_new "github.com/temoto/venderctl/internal/state/new"
 )

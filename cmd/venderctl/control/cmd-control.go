@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/juju/errors"
-	tele_api "github.com/temoto/vender/head/tele/api"
+	tele_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
 	tele_config "github.com/temoto/venderctl/internal/tele/config"
