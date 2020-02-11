@@ -12,6 +12,8 @@ money {
 
 tax {
   ru2019 {
+    tag1009 = "payment address"
+    tag1187 = "payment place"
     tag1018 = ""
     tag1055 = 2
     tag1199 = 6

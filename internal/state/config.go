@@ -28,9 +28,11 @@ type Config struct {
 	}
 	Tax struct {
 		Ru2019 struct {
-			Tag1018 string
-			Tag1055 int // uint32
-			Tag1199 int // uint32
+			Tag1009 string // payment address
+			Tag1187 string // payment place
+			Tag1018 string // business INN
+			Tag1055 int    // uint32 tax form
+			Tag1199 int    // uint32 tax rate
 			Umka    struct {
 				BaseURL string `hcl:"base_url"`
 

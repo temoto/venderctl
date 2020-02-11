@@ -93,6 +93,8 @@ func processRu2019(ctx context.Context, db *pg.Conn, tj *MTaxJob) error {
 	doc.AppendNew(1054, 1)
 	doc.AppendNew(1055, g.Config.Tax.Ru2019.Tag1055)
 	// d.AppendNew(1008, "client email or SMS number")
+	doc.AppendNew(1009, g.Config.Tax.Ru2019.Tag1009) // payment address
+	doc.AppendNew(1187, g.Config.Tax.Ru2019.Tag1187) // payment place
 	doc.AppendNew(1036, sameVmid)
 	for _, op := range tj.Ops {
 		stlv := doc.AppendNew(1059, nil)
