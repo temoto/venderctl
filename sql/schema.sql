@@ -182,15 +182,16 @@ DECLARE
     tj tax_job;
     name text;
 BEGIN
+    -- lock trans row
     PERFORM
         1
     FROM
         trans
-    WHERE
-        vmid = t.vmid
-        AND vmtime = t.vmtime
-    LIMIT 1
-    FOR UPDATE;
+    WHERE (vmid, vmtime) = (t.vmid,
+        t.vmtime)
+LIMIT 1
+FOR UPDATE;
+    -- if trans already has tax_job assigned, just return it
     IF t.tax_job_id IS NOT NULL THEN
         SELECT
             * INTO STRICT tj
@@ -200,6 +201,7 @@ BEGIN
             id = t.tax_job_id;
         RETURN tj;
     END IF;
+    -- op code to human friendly name via catalog
     SELECT
         catalog.name INTO name
     FROM
@@ -209,7 +211,7 @@ BEGIN
     IF NOT found THEN
         name := '#' || t.menu_code;
     END IF;
-    ops := jsonb_build_array (jsonb_build_object('vmid', t.vmid, 'time', t.vmtime, 'name', name, 'code', t.menu_code, 'amount', 1, 'price', t.price));
+    ops := jsonb_build_array (jsonb_build_object('vmid', t.vmid, 'time', t.vmtime, 'name', name, 'code', t.menu_code, 'amount', 1, 'price', t.price, 'method', t.method));
     INSERT INTO tax_job (state, created, modified, scheduled, processor, ops, gross)
         VALUES ('sched', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'ru2019', ops, t.price)
     RETURNING

@@ -16,6 +16,7 @@ import (
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/go-pg/pg/v9"
 	"github.com/juju/errors"
+	vender_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
 )
@@ -113,8 +114,6 @@ type MTaxJob struct {
 }
 
 type TaxJobData struct {
-	// Ops []TaxJobOp `json:"ops"`
-
 	Ru2019 struct {
 		OpTime  string `json:"optime,omitempty"`
 		DocNum  uint32 `json:"docnum,omitempty"`
@@ -137,6 +136,8 @@ type TaxJobOp struct {
 	Amount float64 `json:"amount"`
 	Price  uint32  `json:"price"`
 	Vmid   int32   `json:"vmid"`
+
+	Method vender_api.PaymentMethod `json:"method"`
 }
 
 func (d *TaxJobData) String() string {

@@ -2,6 +2,7 @@ package tax
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/juju/errors"
 	ru_nalog "github.com/temoto/ru-nalog-go"
 	"github.com/temoto/ru-nalog-go/umka"
+	vender_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/internal/state"
 )
 
@@ -66,10 +68,28 @@ func processRu2019(ctx context.Context, db *pg.Conn, tj *MTaxJob) error {
 	if len(tj.Ops) == 0 {
 		return tj.UpdateFinal(db, "error: empty data.ops")
 	}
+	sameMethod := tj.Ops[0].Method
 	sameVmid := tj.Ops[0].Vmid
 	for _, op := range tj.Ops {
 		if op.Vmid != sameVmid {
 			return errors.NotSupportedf("operations with different vmid")
+		}
+		switch op.Method {
+		case vender_api.PaymentMethod_Cash:
+			// continue with umka
+
+		// TODO continue with umka, set relevant tags
+		// OR skip processing because payment terminal already sent tax data
+		// case vender_api.PaymentMethod_Cashless:
+
+		case vender_api.PaymentMethod_Gift:
+			return tj.UpdateFinal(db, fmt.Sprintf("skip payment method=%s", op.Method.String()))
+
+		default:
+			return errors.NotSupportedf("operation payment method=%s", op.Method.String())
+		}
+		if op.Method != sameMethod {
+			return errors.NotSupportedf("operations with different payment method")
 		}
 	}
 
