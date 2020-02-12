@@ -84,7 +84,7 @@ func processRu2019(ctx context.Context, db *pg.Conn, tj *MTaxJob) error {
 		}
 		if !(tj.Data.Ru2019.FSStatus.OfflineDocsCount == 0 || tj.Data.Ru2019.FSStatus.UnsentDocNumber > tj.Data.Ru2019.DocNum) {
 			g.Log.Debugf("%s: try later DocNum=%d is not sent", procRu2019, tj.Data.Ru2019.DocNum)
-			return tj.UpdateReadyLater(db)
+			return tj.UpdateScheduleLater(db)
 		}
 		return tj.UpdateFinal(db, "")
 	}
@@ -118,7 +118,7 @@ func processRu2019(ctx context.Context, db *pg.Conn, tj *MTaxJob) error {
 	}
 	if waitSendOFD {
 		g.Log.Debugf("%s: try later DocNum=%d is not sent", procRu2019, tj.Data.Ru2019.DocNum)
-		return tj.UpdateReadyLater(db)
+		return tj.UpdateScheduleLater(db)
 	} else {
 		return tj.UpdateFinal(db, "")
 	}

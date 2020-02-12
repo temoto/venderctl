@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS error (
 CREATE INDEX IF NOT EXISTS idx_error_vmid_vmtime_code ON error (vmid, vmtime DESC) INCLUDE (code);
 
 CREATE TYPE tax_job_state AS enum (
-    'ready',
+    'sched',
     'busy',
     'final',
     'help'
@@ -80,13 +80,13 @@ CREATE TABLE IF NOT EXISTS tax_job (
     data jsonb,
     gross int4 NULL,
     notes text[],
-    CHECK (NOT (state = 'ready' AND scheduled IS NULL)),
+    CHECK (NOT (state = 'sched' AND scheduled IS NULL)),
     CHECK (NOT (state = 'busy' AND worker IS NULL))
 );
 
-CREATE INDEX IF NOT EXISTS idx_tax_job_ready ON tax_job (scheduled, modified)
+CREATE INDEX IF NOT EXISTS idx_tax_job_sched ON tax_job (scheduled, modified)
 WHERE
-    state = 'ready';
+    state = 'sched';
 
 CREATE INDEX IF NOT EXISTS idx_tax_job_help ON tax_job (modified)
 WHERE
@@ -150,7 +150,7 @@ CREATE OR REPLACE FUNCTION tax_job_take (arg_worker text)
         state = 'busy',
         worker = arg_worker
     WHERE
-        state = 'ready'
+        state = 'sched'
         AND scheduled <= CURRENT_TIMESTAMP
         AND id = (
             SELECT
@@ -158,7 +158,7 @@ CREATE OR REPLACE FUNCTION tax_job_take (arg_worker text)
             FROM
                 tax_job
             WHERE
-                state = 'ready'
+                state = 'sched'
                 AND scheduled <= CURRENT_TIMESTAMP
             ORDER BY
                 scheduled,
@@ -209,9 +209,9 @@ BEGIN
     IF NOT found THEN
         name := '#' || t.menu_code;
     END IF;
-    ops := jsonb_build_array( jsonb_build_object('vmid', t.vmid, 'time', t.vmtime, 'name', name, 'code', t.menu_code, 'amount', 1, 'price', t.price));
+    ops := jsonb_build_array (jsonb_build_object('vmid', t.vmid, 'time', t.vmtime, 'name', name, 'code', t.menu_code, 'amount', 1, 'price', t.price));
     INSERT INTO tax_job (state, created, modified, scheduled, processor, ops, gross)
-        VALUES ('ready', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'ru2019', ops, t.price)
+        VALUES ('sched', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'ru2019', ops, t.price)
     RETURNING
         * INTO STRICT tj;
     UPDATE
@@ -234,8 +234,8 @@ BEGIN
         NOTIFY tax_job_final;
     WHEN 'help' THEN
         NOTIFY tax_job_help;
-    WHEN 'ready' THEN
-        NOTIFY tax_job_ready;
+    WHEN 'sched' THEN
+        NOTIFY tax_job_sched;
     ELSE
         NULL;
     END CASE;

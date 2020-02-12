@@ -59,9 +59,9 @@ func taxLoop(ctx context.Context) error {
 	hostname, _ := os.Hostname()
 	worker := fmt.Sprintf("%s:%d:%d", hostname, os.Getpid(), rand.Int31())
 
-	llReady := g.DB.Listen("tax_job_ready")
-	defer llReady.Close()
-	chReady := llReady.Channel()
+	llSched := g.DB.Listen("tax_job_sched")
+	defer llSched.Close()
+	chSched := llSched.Channel()
 
 	g.Alive.Add(1)
 	db := g.DB.Conn()
@@ -76,8 +76,8 @@ func taxLoop(ctx context.Context) error {
 	for {
 		if !try {
 			select {
-			case <-chReady:
-				g.Log.Debugf("notified tax_job_ready")
+			case <-chSched:
+				g.Log.Debugf("notified tax_job_sched")
 
 			case <-time.After(pollInterval):
 
@@ -184,8 +184,8 @@ func (tj *MTaxJob) UpdateFinal(conn *pg.Conn, note string) error {
 	return tj.Update(conn, assign, params...)
 }
 
-func (tj *MTaxJob) UpdateReadyLater(conn *pg.Conn) error {
-	tj.State = "ready"
+func (tj *MTaxJob) UpdateScheduleLater(conn *pg.Conn) error {
+	tj.State = "sched"
 	return tj.Update(conn, "scheduled=(current_timestamp + '5 second'::interval)")
 }
 
