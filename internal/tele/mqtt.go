@@ -13,6 +13,7 @@ import (
 	"github.com/juju/errors"
 	"github.com/temoto/vender/helpers"
 	"github.com/temoto/vender/log2"
+	vender_api "github.com/temoto/vender/tele"
 	"github.com/temoto/vender/tele/mqtt"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
 	tele_config "github.com/temoto/venderctl/internal/tele/config"
@@ -70,7 +71,8 @@ func (self *tele) mqttInitServer(ctx context.Context, mlog *log2.Log) error {
 		ForceSubs: []packet.Subscription{
 			{Topic: "%c/r/#", QOS: packet.QOSAtLeastOnce},
 		},
-		OnAuth:    self.mqttOnAuth,
+		OnConnect: self.mqttOnConnect,
+		OnClose:   self.mqttOnClose,
 		OnPublish: self.mqttServerOnPublish,
 	})
 	errs := make([]error, 0)
@@ -103,20 +105,29 @@ func (self *tele) mqttInitServer(ctx context.Context, mlog *log2.Log) error {
 	return errors.Annotate(err, "mqtt Server.Init")
 }
 
-func (self *tele) mqttOnAuth(ctx context.Context, id, username string, opt *mqtt.BackendOptions, pkt packet.Generic) (bool, error) {
-	if err := self.secrets.CachedReadFile(self.conf.SecretsPath, SecretsStale); err != nil {
-		return false, err
-	}
-	switch pt := pkt.(type) {
-	case *packet.Connect:
-		return self.mqttOnAuthConnect(ctx, id, opt, pt)
-
-	default:
-		return false, errors.Errorf("onauth TODO pkt=%s", pkt.String())
+func (self *tele) mqttOnClose(clientid string, clean bool, e error) {
+	// inject new state if clientid ~= vm(-?\d+)
+	if strings.HasPrefix(clientid, "vm") {
+		if x, err := strconv.ParseInt(clientid[2:], 10, 32); err == nil {
+			vmid := int32(x)
+			state := vender_api.State_Disconnected
+			// if clean {
+			// 	// TODO maybe new state "correctly shutdown"
+			// 	state = vender_api.State_Invalid
+			// }
+			self.pch <- tele_api.Packet{
+				VmId:    vmid,
+				Kind:    tele_api.PacketState,
+				Payload: []byte{byte(state)},
+			}
+		}
 	}
 }
 
-func (self *tele) mqttOnAuthConnect(ctx context.Context, id string, opt *mqtt.BackendOptions, pkt *packet.Connect) (bool, error) {
+func (self *tele) mqttOnConnect(ctx context.Context, opt *mqtt.BackendOptions, pkt *packet.Connect) (bool, error) {
+	if err := self.secrets.CachedReadFile(self.conf.SecretsPath, SecretsStale); err != nil {
+		return false, err
+	}
 	if err := self.secrets.Verify(pkt.Username, pkt.Password); err != nil {
 		self.log.Errorf("authenticate user=%s err=%v", pkt.Username, err)
 		return false, nil
