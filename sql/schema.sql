@@ -300,3 +300,37 @@ CREATE TRIGGER trans_tax
     FOR EACH ROW
     EXECUTE PROCEDURE trans_tax_trigger ();
 
+CREATE OR REPLACE FUNCTION vmstate (s int4)
+    RETURNS text
+    AS $$
+    -- TODO generate from tele.proto
+    -- Invalid = 0;
+    -- Boot = 1;
+    -- Nominal = 2;
+    -- Disconnected = 3;
+    -- Problem = 4;
+    -- Service = 5;
+    -- Lock = 6;
+    SELECT
+        CASE WHEN s = 0 THEN
+            'Invalid'
+        WHEN s = 1 THEN
+            'Boot'
+        WHEN s = 2 THEN
+            'Nominal'
+        WHEN s = 3 THEN
+            'Disconnected'
+        WHEN s = 4 THEN
+            'Problem'
+        WHEN s = 5 THEN
+            'Service'
+        WHEN s = 6 THEN
+            'Lock'
+        ELSE
+            'unknown:' || s
+        END
+$$
+LANGUAGE sql
+IMMUTABLE
+    RETURNS NULL ON NULL INPUT;
+
