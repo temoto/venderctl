@@ -66,7 +66,7 @@ func processRu2019(ctx context.Context, db *pg.Conn, tj *MTaxJob) error {
 		tj.Data = &TaxJobData{}
 	}
 	if len(tj.Ops) == 0 {
-		return tj.UpdateFinal(db, "error: empty data.ops")
+		return processRu2019Final(ctx, db, tj, "error: empty data.ops")
 	}
 	sameMethod := tj.Ops[0].Method
 	sameVmid := tj.Ops[0].Vmid
@@ -83,7 +83,7 @@ func processRu2019(ctx context.Context, db *pg.Conn, tj *MTaxJob) error {
 		// case vender_api.PaymentMethod_Cashless:
 
 		case vender_api.PaymentMethod_Gift:
-			return tj.UpdateFinal(db, fmt.Sprintf("skip payment method=%s", op.Method.String()))
+			return processRu2019Final(ctx, db, tj, fmt.Sprintf("skip payment method=%s", op.Method.String()))
 
 		default:
 			return errors.NotSupportedf("operation payment method=%s", op.Method.String())
@@ -106,7 +106,7 @@ func processRu2019(ctx context.Context, db *pg.Conn, tj *MTaxJob) error {
 			g.Log.Debugf("%s: try later DocNum=%d is not sent", procRu2019, tj.Data.Ru2019.DocNum)
 			return tj.UpdateScheduleLater(db)
 		}
-		return tj.UpdateFinal(db, "")
+		return processRu2019Final(ctx, db, tj, "")
 	}
 
 	doc := ru_nalog.NewDoc(0, ru_nalog.FDCheck)
@@ -140,8 +140,31 @@ func processRu2019(ctx context.Context, db *pg.Conn, tj *MTaxJob) error {
 		g.Log.Debugf("%s: try later DocNum=%d is not sent", procRu2019, tj.Data.Ru2019.DocNum)
 		return tj.UpdateScheduleLater(db)
 	} else {
-		return tj.UpdateFinal(db, "")
+		return processRu2019Final(ctx, db, tj, "")
 	}
+}
+
+func processRu2019Final(ctx context.Context, db *pg.Conn, tj *MTaxJob, note string) error {
+	if err := tj.UpdateFinal(db, note); err != nil {
+		return err
+	}
+
+	if tj.ExtId != "" && len(tj.Ops) > 0 {
+		g := state.GetGlobal(ctx)
+		const replyTimeout = time.Minute
+		vmid := tj.Ops[0].Vmid
+		cmd := &vender_api.Command{
+			Deadline: time.Now().Add(2 * time.Minute).UnixNano(),
+			Task: &vender_api.Command_Show_QR{Show_QR: &vender_api.Command_ArgShowQR{
+				Layout: "tax-ru19",
+				QrText: tj.ExtId,
+			}},
+		}
+		if _, err := g.Tele.CommandTx(vmid, cmd, replyTimeout); err != nil {
+			g.Log.Errorf("tax/ru2019 vmid=%d command=show_QR err=%v", vmid, err)
+		}
+	}
+	return nil
 }
 
 func processRu2019StatusCycleDance(ctx context.Context, u umka.Umker, tj *MTaxJob) error {

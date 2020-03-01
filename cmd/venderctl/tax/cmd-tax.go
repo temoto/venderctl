@@ -19,6 +19,7 @@ import (
 	vender_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
+	tele_config "github.com/temoto/venderctl/internal/tele/config"
 )
 
 const CmdName = "tax"
@@ -34,7 +35,13 @@ func taxMain(ctx context.Context, flags *flag.FlagSet) error {
 
 	configPath := flags.Lookup("config").Value.String()
 	g.Config = state.MustReadConfig(g.Log, state.NewOsFullReader(), configPath)
-	g.Log.Debugf("config=%+v", g.Config)
+	if err := g.Config.Tele.EnableClient(tele_config.RoleControl); err != nil {
+		return err
+	}
+	if err := g.Tele.Init(ctx, g.Log, g.Config.Tele); err != nil {
+		return err
+	}
+	// g.Log.Debugf("config=%+v", g.Config)
 
 	if err := taxInit(ctx); err != nil {
 		return errors.Annotate(err, "taxInit")

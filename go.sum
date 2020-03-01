@@ -72,6 +72,7 @@ github.com/paulrosania/go-charset v0.0.0-20151028000031-621bb39fcc83/go.mod h1:Y
 github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942/go.mod h1:eCbImbZ95eXtAUIbLAuAVnBnwf83mjf6QIVH8SHYwqQ=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/skip2/go-qrcode v0.0.0-20191027152451-9434209cb086/go.mod h1:PLPIyL7ikehBD1OAjmKKiOEhbvWyHGaNDjquXMcYABo=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.2.0/go.mod h1:qt09Ya8vawLte6SNmTgCsAVtYtaKzEcn8ATUoHMkEqE=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
@@ -90,8 +91,8 @@ github.com/temoto/iodin v0.0.0-20190211111721-99c87617ba86/go.mod h1:PSCCOZs9yzx
 github.com/temoto/ru-nalog-go v0.6.1-0.20200126230605-d6d5bfc79675 h1:WXGyy/+sYZrm1ECaaZ36mJDKkVXziHAJMP3zhC7geTs=
 github.com/temoto/ru-nalog-go v0.6.1-0.20200126230605-d6d5bfc79675/go.mod h1:dSD3JpwDLmkzjZZAkbJsC2ivLIM/dv2P51TO3y85PAQ=
 github.com/temoto/spq v0.10.0/go.mod h1:LbzRQb1nFUnE3OdI4mhjcRBrD7G0ZtIO2nqtgs0ZK2U=
-github.com/temoto/vender v0.200212.0 h1:w17Qqd82cRu6t1f4Kr9q2dH+ZwspeDqWhs70J7tqjjM=
-github.com/temoto/vender v0.200212.0/go.mod h1:zAQWCtAJ/zPQDejYjdfXYQzx2N43xeaTSO0rqTKJK9o=
+github.com/temoto/vender v0.200301.0 h1:JvYHCNqah43F2NyhBr2CH9aaqney0297VbUt3UY+edQ=
+github.com/temoto/vender v0.200301.0/go.mod h1:80ZkF9InnAOYjIixnY+2xJg+I3bXHivNh8ImJDqNic8=
 github.com/vmihailenco/tagparser v0.1.0 h1:u6yzKTY6gW/KxL/K2NTEQUOSXZipyGiIRarGjJKmQzU=
 github.com/vmihailenco/tagparser v0.1.0/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgqMEUPoW2WPyhdI=
 golang.org/x/crypto v0.0.0-20180910181607-0e37d006457b/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=

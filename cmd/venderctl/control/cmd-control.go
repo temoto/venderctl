@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/juju/errors"
-	tele_api "github.com/temoto/vender/tele"
+	vender_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
 	tele_config "github.com/temoto/venderctl/internal/tele/config"
@@ -60,15 +60,15 @@ func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 
 	switch cmd {
 	case "report":
-		cmd := &tele_api.Command{
-			Task: &tele_api.Command_Report{Report: &tele_api.Command_ArgReport{}},
+		cmd := &vender_api.Command{
+			Task: &vender_api.Command_Report{Report: &vender_api.Command_ArgReport{}},
 		}
 		_, err := g.Tele.CommandTx(targetId, cmd, replyTimeout)
 		return err
 
 	case "ping":
-		cmd := &tele_api.Command{
-			Task: &tele_api.Command_Exec{Exec: &tele_api.Command_ArgExec{
+		cmd := &vender_api.Command{
+			Task: &vender_api.Command_Exec{Exec: &vender_api.Command_ArgExec{
 				Scenario: "",
 				Lock:     false,
 			}},
@@ -90,8 +90,8 @@ func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 
 	case "exec":
 		scenario := strings.Join(flags.Args()[argOffset+2:], " ")
-		cmd := &tele_api.Command{
-			Task: &tele_api.Command_Exec{Exec: &tele_api.Command_ArgExec{
+		cmd := &vender_api.Command{
+			Task: &vender_api.Command_Exec{Exec: &vender_api.Command_ArgExec{
 				Scenario: scenario,
 				Lock:     true,
 			}},
@@ -113,10 +113,19 @@ func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 			sec++
 		}
 		g.Log.Infof("duration=%v rounded up to %d seconds", duration, sec)
-		cmd := &tele_api.Command{
-			Task: &tele_api.Command_Lock{Lock: &tele_api.Command_ArgLock{Duration: sec}},
+		cmd := &vender_api.Command{
+			Task: &vender_api.Command_Lock{Lock: &vender_api.Command_ArgLock{Duration: sec}},
 		}
 		_, err = g.Tele.CommandTx(targetId, cmd, replyTimeout+duration)
+		return err
+
+	case "qr":
+		qrText := flags.Arg(argOffset + 2)
+		cmd := &vender_api.Command{
+			Deadline: time.Now().Add(2 * time.Minute).UnixNano(),
+			Task:     &vender_api.Command_Show_QR{Show_QR: &vender_api.Command_ArgShowQR{QrText: qrText}},
+		}
+		_, err := g.Tele.CommandTx(targetId, cmd, replyTimeout)
 		return err
 
 	default:
