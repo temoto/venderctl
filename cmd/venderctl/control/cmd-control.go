@@ -22,7 +22,7 @@ const replyTimeout = 51 * time.Second
 // TODO get-config
 // TODO set-config
 // const cmdUsage = "MACHINE-ID {report | ping | set-inventory | get-config | set-config | exec SCENARIO... | lock DURATION}"
-const cmdUsage = "MACHINE-ID {report | ping | exec SCENARIO... | lock DURATION}"
+const cmdUsage = "MACHINE-ID {report | ping | exec SCENARIO... | lock DURATION | qr }"
 
 var Cmd = cli.Cmd{
 	Name:   "control",
