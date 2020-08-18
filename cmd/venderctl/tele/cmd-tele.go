@@ -87,6 +87,12 @@ func teleLoop(ctx context.Context) error {
 }
 
 func onPacket(ctx context.Context, p tele_api.Packet) error {
+	// ignore some packets
+	switch p.Kind {
+	case tele_api.PacketCommandReply:
+		return nil
+	}
+
 	g := state.GetGlobal(ctx)
 	dbConn := g.DB.Conn()
 	defer dbConn.Close()
