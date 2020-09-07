@@ -4,6 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net"
+	"net/http"
+	_ "net/http/pprof" //#nosec G108
 	"os"
 	"strings"
 
@@ -14,6 +17,7 @@ import (
 	cmd_passwd "github.com/temoto/venderctl/cmd/venderctl/passwd"
 	cmd_tax "github.com/temoto/venderctl/cmd/venderctl/tax"
 	cmd_tele "github.com/temoto/venderctl/cmd/venderctl/tele"
+	"github.com/temoto/venderctl/internal/state"
 	state_new "github.com/temoto/venderctl/internal/state/new"
 	"github.com/temoto/venderctl/internal/tele"
 )
@@ -93,6 +97,12 @@ func main() {
 				log.SetFlags(log2.LInteractiveFlags)
 			}
 			if c.Name != "version" {
+				// Sad difference with vender code: config is read inside cmd.Action, not available here
+				// Options considered:
+				// - avoid config to environ
+				// - duplicate pprofStart code in actions
+				// - cmd.PreAction hook -- maybe best in the long run, needed quick
+				g.Error(pprofStart(g, os.Getenv("pprof_listen")))
 				log.Infof("venderctl version=%s starting %s", BuildVersion, cmdName)
 			}
 
@@ -108,6 +118,25 @@ func main() {
 	flags.Usage()
 	os.Exit(1)
 }
+
+func pprofStart(g *state.Global, addr string) error {
+	if addr == "" {
+		return nil
+	}
+
+	srv := &http.Server{Addr: addr, Handler: nil} // TODO specific pprof handler
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return errors.Annotate(err, "pprof")
+	}
+	g.Log.Debugf("pprof http://%s/debug/pprof/", ln.Addr().String())
+	go pprofServe(g, srv, ln)
+	return nil
+
+}
+
+// not inline only for clear goroutine source in panic trace
+func pprofServe(g *state.Global, srv *http.Server, ln net.Listener) { g.Error(srv.Serve(ln)) }
 
 func versionMain(ctx context.Context, flags *flag.FlagSet) error {
 	fmt.Printf("venderctl %s\n", BuildVersion)
