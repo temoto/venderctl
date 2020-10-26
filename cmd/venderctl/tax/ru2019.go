@@ -162,6 +162,8 @@ func processRu2019Final(ctx context.Context, db *pg.Conn, tj *MTaxJob, note stri
 		}
 		if _, err := g.Tele.CommandTx(vmid, cmd, replyTimeout); err != nil {
 			g.Log.Errorf("tax/ru2019 vmid=%d command=show_QR err=%v", vmid, err)
+			fmt.Printf("\033[41m ERROR show QR. Exit for restart \033[0m\n")
+			panic("FIXTMP")
 		}
 	}
 	return nil
