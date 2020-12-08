@@ -9,10 +9,11 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[PacketInvalid-0]
-	_ = x[PacketState-1]
-	_ = x[PacketTelemetry-2]
-	_ = x[PacketCommand-3]
-	_ = x[PacketCommandReply-4]
+	_ = x[PacketConnect-1]
+	_ = x[PacketState-2]
+	_ = x[PacketTelemetry-3]
+	_ = x[PacketCommand-4]
+	_ = x[PacketCommandReply-5]
 }
 
 const _PacketKind_name = "InvalidStateTelemetryCommandCommandReply"

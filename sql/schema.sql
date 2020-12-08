@@ -131,6 +131,21 @@ END;
 $$
 LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION connect_update (
+  arg_vmid integer,
+  arg_connect boolean
+)
+RETURNS integer AS
+$body$
+BEGIN
+    INSERT INTO state (vmid, state, received, connected, contime)  VALUES (arg_vmid, 0, CURRENT_TIMESTAMP, arg_connect, CURRENT_TIMESTAMP)
+    ON CONFLICT (vmid) DO UPDATE 
+    SET connected = excluded.connected, contime = CURRENT_TIMESTAMP;
+    return null;
+END;
+$body$
+LANGUAGE 'plpgsql'
+
 CREATE OR REPLACE VIEW tax_job_help AS
 SELECT
     *

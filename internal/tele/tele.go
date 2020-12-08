@@ -14,12 +14,13 @@ import (
 	"time"
 
 	"github.com/256dpi/gomqtt/packet"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/golang/protobuf/proto"
 	"github.com/juju/errors"
 	"github.com/temoto/alive/v2"
 	"github.com/temoto/vender/log2"
 	vender_api "github.com/temoto/vender/tele"
-	"github.com/temoto/vender/tele/mqtt"
+	mqtt1 "github.com/temoto/vender/tele/mqtt"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
 	tele_config "github.com/temoto/venderctl/internal/tele/config"
 )
@@ -33,8 +34,10 @@ type tele struct { //nolint:maligned
 	conf    tele_config.Config
 	log     *log2.Log
 	pch     chan tele_api.Packet
-	mqttsrv *mqtt.Server
-	mqttcli *mqtt.Client
+	mqttsrv *mqtt1.Server
+	mqttcli *mqtt1.Client
+	m       mqtt.Client
+	mopt    *mqtt.ClientOptions
 	mqttcom interface {
 		Close() error
 		Publish(context.Context, *packet.Message) error

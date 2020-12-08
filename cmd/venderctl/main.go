@@ -17,6 +17,7 @@ import (
 	cmd_passwd "github.com/temoto/venderctl/cmd/venderctl/passwd"
 	cmd_tax "github.com/temoto/venderctl/cmd/venderctl/tax"
 	cmd_tele "github.com/temoto/venderctl/cmd/venderctl/tele"
+	cmd_sponge "github.com/temoto/venderctl/cmd/venderctl/sponge"
 	"github.com/temoto/venderctl/internal/state"
 	state_new "github.com/temoto/venderctl/internal/state/new"
 	"github.com/temoto/venderctl/internal/tele"
@@ -28,6 +29,7 @@ var commands = []cli.Cmd{
 	cmd_passwd.Cmd,
 	cmd_tax.Cmd,
 	cmd_tele.Cmd,
+	cmd_sponge.Cmd,
 	{Name: "version", Action: versionMain},
 }
 

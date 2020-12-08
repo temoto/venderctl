@@ -13,6 +13,7 @@ type PacketKind uint8
 
 const (
 	PacketInvalid PacketKind = iota
+	PacketConnect
 	PacketState
 	PacketTelemetry
 	PacketCommand

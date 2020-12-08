@@ -35,6 +35,9 @@ const (
 	ModeDisabled Mode = ""
 	ModeClient   Mode = "client"
 	ModeServer   Mode = "server"
+	ModeTax		 Mode = "tax"
+	ModeCommand  Mode = "command"
+	ModeSponge   Mode = "sponge"
 )
 
 type Connect struct { //nolint:maligned
@@ -58,6 +61,15 @@ type TLS struct { //nolint:maligned
 	PSK      string `hcl:"psk"` // secret
 	CertFile string `hcl:"cert_file"`
 	KeyFile  string `hcl:"key_file"`
+}
+
+func (c *Config) SetMode(m string) {
+	switch m {
+	case "sponge":
+		c.Mode = ModeSponge
+	default:
+		c.Mode = ModeDisabled
+	}
 }
 
 // [a, b], b -> true

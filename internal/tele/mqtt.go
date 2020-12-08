@@ -3,6 +3,7 @@ package tele
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -10,11 +11,12 @@ import (
 
 	"github.com/256dpi/gomqtt/client/future"
 	"github.com/256dpi/gomqtt/packet"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/juju/errors"
 	"github.com/temoto/vender/helpers"
 	"github.com/temoto/vender/log2"
 	vender_api "github.com/temoto/vender/tele"
-	"github.com/temoto/vender/tele/mqtt"
+	mqttl "github.com/temoto/vender/tele/mqtt"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
 	tele_config "github.com/temoto/venderctl/internal/tele/config"
 	"gopkg.in/hlandau/passlib.v1"
@@ -33,6 +35,15 @@ func (self *tele) mqttInit(ctx context.Context, log *log2.Log) error {
 		return nil
 
 	case tele_config.ModeClient:
+		self.mopt = mqtt.NewClientOptions()
+		self.mopt.SetBinaryWill("tax/c", []byte{0x00}, 1, true)
+		self.mopt.SetOnConnectHandler(self.onConnectHandler)
+		return self.mqttInitClient(ctx, mlog)
+
+	case tele_config.ModeSponge:
+		self.mopt = mqtt.NewClientOptions()
+		self.mopt.SetBinaryWill("sponge/c", []byte{0x00}, 1, true)
+		self.mopt.SetOnConnectHandler(self.onConnectHandlerSponge)
 		return self.mqttInitClient(ctx, mlog)
 
 	case tele_config.ModeServer:
@@ -44,29 +55,136 @@ func (self *tele) mqttInit(ctx context.Context, log *log2.Log) error {
 }
 
 func (self *tele) mqttInitClient(ctx context.Context, mlog *log2.Log) error {
-	self.mqttcli = &mqtt.Client{Log: mlog}
-	self.mqttcom = self.mqttcli
-	cfg := &self.mqttcli.Config // short alias
-	cfg.BrokerURL = self.conf.Connect.URL
-	cfg.ClientID = self.conf.Connect.ClientID
-	cfg.ReconnectDelay = 7 * time.Second
-	cfg.NetworkTimeout = time.Duration(self.conf.Connect.NetworkTimeoutSec) * time.Second
-	cfg.KeepaliveSec = uint16(self.conf.Connect.KeepaliveSec)
-	if cfg.KeepaliveSec == 0 {
-		cfg.KeepaliveSec = 5
+	c := self.conf.Connect.URL
+	if c == "" {
+		panic("error client connect URL blank")
 	}
-	cfg.Subscriptions = []packet.Subscription{{Topic: "+/cr/+", QOS: packet.QOSAtLeastOnce}}
-	cfg.OnMessage = self.mqttClientOnPublish
-	var err error
-	cfg.TLS, err = self.conf.Connect.TLS.TLSConfig()
+	u, err := url.Parse(c)
 	if err != nil {
-		return errors.Annotate(err, "TLS")
+		panic(fmt.Sprintf("error parse client connect URL['%s']", err))
 	}
-	return self.mqttcli.Init()
+	scheme := u.Scheme
+	host := u.Host
+	user := u.User.Username()
+	pass, _ := u.User.Password()
+	keepAlive := helpers.IntSecondConfigDefault(self.conf.Connect.KeepaliveSec, 60)
+	self.mopt.
+		AddBroker(strings.Join([]string{scheme, host}, "://")).
+		SetCleanSession(false).
+		SetClientID(user).
+		SetUsername(user).
+		SetPassword(pass).
+		SetDefaultPublishHandler(self.messageHandler).
+		SetKeepAlive(keepAlive).
+		SetPingTimeout(keepAlive).
+		SetOrderMatters(false).
+		// SetTLSConfig(tlsconf).
+		SetResumeSubs(true).SetCleanSession(false).
+		// SetStore(mqtt.NewFileStore(storePath)).
+		SetConnectRetryInterval(keepAlive).
+		// SetOnConnectHandler(self.onConnectHandler).
+		SetConnectionLostHandler(self.connectLostHandler).
+		SetConnectRetry(true)
+
+	self.m = mqtt.NewClient(self.mopt)
+
+	token := self.m.Connect()
+	for !token.WaitTimeout(1 * time.Second) {
+	}
+	if err := token.Error(); err != nil {
+		panic(err)
+	}
+	// if token := self.m.Connect(); token.Wait() && token.Error() != nil {
+	// 	panic(token.Error())
+	// }
+
+	// fmt.Printf("\033[41m %s \033[0m\n", self.mopt)
+	// if !token.IsConnected()
+
+	self.log.Infof("connected to broker")
+	return nil
+}
+
+func (self *tele) messageHandler(c mqtt.Client, msg mqtt.Message) {
+	self.log.Debugf("income message: (%s %x) ", msg.Topic(), msg.Payload())
+	p, err := parseTopic(msg)
+	switch err {
+	case nil:
+		if p.Kind == tele_api.PacketInvalid {
+			return
+		}
+
+	case errTopicIgnore:
+		return
+
+	default:
+		errors.Annotatef(err, "msg=%v", msg)
+		return
+	}
+	select {
+	case self.pch <- p:
+		return
+	}
+}
+
+// var reTopic = regexp.MustCompile(`^vm(-?\d+)/(\w+)/(.+)$`)
+var reTopic = regexp.MustCompile(`^vm(-?\d+)/(\w+)/?(.+)?$`)
+var errTopicIgnore = fmt.Errorf("ignore irrelevant topic")
+
+func parseTopic(msg mqtt.Message) (tele_api.Packet, error) {
+	parts := reTopic.FindStringSubmatch(msg.Topic())
+	if parts == nil {
+		return tele_api.Packet{}, errTopicIgnore
+	}
+
+	p := tele_api.Packet{Payload: msg.Payload()}
+	if x, err := strconv.ParseInt(parts[1], 10, 32); err != nil {
+		return p, errors.Annotatef(err, "invalid topic=%s parts=%q", msg.Topic, parts)
+	} else {
+		p.VmId = int32(x)
+	}
+	switch {
+	case parts[2] == "c":
+		p.Kind = tele_api.PacketConnect
+	case parts[2] == "r":
+		return tele_api.Packet{}, errTopicIgnore
+	case parts[2] == "cr":
+		p.Kind = tele_api.PacketCommandReply
+	case parts[3] == "1s":
+		p.Kind = tele_api.PacketState
+	case parts[3] == "1t":
+		p.Kind = tele_api.PacketTelemetry
+	default:
+		return p, errors.Errorf("invalid topic=%s parts=%q", msg.Topic, parts)
+	}
+	return p, nil
+}
+
+func (self *tele) onConnectHandler(c mqtt.Client) {
+	if token := c.Subscribe("#", 1, nil); token.Wait() && token.Error() != nil {
+		self.log.Errorf("Subscribe error")
+	} else {
+		self.log.Debugf("Subscribe Ok")
+		c.Publish("tax/c", 1, true, []byte{0x01})
+	}
+}
+
+func (self *tele) onConnectHandlerSponge(c mqtt.Client) {
+	if token := c.Subscribe("#", 1, nil); token.Wait() && token.Error() != nil {
+		self.log.Errorf("Subscribe error")
+	} else {
+		self.log.Debugf("Subscribe Ok")
+		c.Publish("sponge/c", 1, true, []byte{0x01})
+	}
+
+}
+
+func (self *tele) connectLostHandler(c mqtt.Client, err error) {
+	self.log.Debugf("broker connection lost.")
 }
 
 func (self *tele) mqttInitServer(ctx context.Context, mlog *log2.Log) error {
-	self.mqttsrv = mqtt.NewServer(mqtt.ServerOptions{
+	self.mqttsrv = mqttl.NewServer(mqttl.ServerOptions{
 		Log: mlog,
 		ForceSubs: []packet.Subscription{
 			{Topic: "%c/r/#", QOS: packet.QOSAtLeastOnce},
@@ -76,7 +194,7 @@ func (self *tele) mqttInitServer(ctx context.Context, mlog *log2.Log) error {
 		OnPublish: self.mqttServerOnPublish,
 	})
 	errs := make([]error, 0)
-	opts := make([]*mqtt.BackendOptions, 0, len(self.conf.Listens))
+	opts := make([]*mqttl.BackendOptions, 0, len(self.conf.Listens))
 	for _, l := range self.conf.Listens {
 		tlsconf, err := l.TLS.TLSConfig()
 		if err != nil {
@@ -85,7 +203,7 @@ func (self *tele) mqttInitServer(ctx context.Context, mlog *log2.Log) error {
 			continue
 		}
 
-		opt := &mqtt.BackendOptions{
+		opt := &mqttl.BackendOptions{
 			URL:            l.URL,
 			TLS:            tlsconf,
 			CtxData:        l,
@@ -106,6 +224,7 @@ func (self *tele) mqttInitServer(ctx context.Context, mlog *log2.Log) error {
 }
 
 func (self *tele) mqttOnClose(clientid string, clean bool, e error) {
+	fmt.Printf("\033[41m mqttOnClose \033[0m\n")
 	// inject new state if clientid ~= vm(-?\d+)
 	if strings.HasPrefix(clientid, "vm") {
 		if x, err := strconv.ParseInt(clientid[2:], 10, 32); err == nil {
@@ -124,7 +243,8 @@ func (self *tele) mqttOnClose(clientid string, clean bool, e error) {
 	}
 }
 
-func (self *tele) mqttOnConnect(ctx context.Context, opt *mqtt.BackendOptions, pkt *packet.Connect) (bool, error) {
+func (self *tele) mqttOnConnect(ctx context.Context, opt *mqttl.BackendOptions, pkt *packet.Connect) (bool, error) {
+	fmt.Printf("\033[41m mqttOnConnect \033[0m\n")
 	if err := self.secrets.CachedReadFile(self.conf.SecretsPath, SecretsStale); err != nil {
 		return false, err
 	}
@@ -143,6 +263,7 @@ func (self *tele) mqttOnConnect(ctx context.Context, opt *mqtt.BackendOptions, p
 }
 
 func (self *tele) mqttClientOnPublish(msg *packet.Message) error {
+	fmt.Printf("\033[41m mqttClientOnPublish \033[0m\n")
 	// defer ack.Cancel()
 	if !self.alive.Add(1) {
 		return context.Canceled
@@ -265,33 +386,33 @@ func (self *tele) mqttSend(ctx context.Context, p tele_api.Packet) error {
 		return errors.Errorf("code error mqtt not implemented Send packet=%v", p)
 	}
 	topic := fmt.Sprintf("vm%d/r/c", p.VmId)
-	msg := &packet.Message{
-		Topic:   topic,
-		Payload: p.Payload,
-		QOS:     packet.QOSAtLeastOnce,
-		Retain:  false,
-	}
-	ctx, cancel := context.WithCancel(ctx)
-	go func() {
-		defer cancel()
-		select {
-		case <-self.alive.StopChan():
-		case <-ctx.Done():
-		}
-	}()
-	self.log.Debugf("mqtt publish topic=%s payload=%x", msg.Topic, msg.Payload)
-	switch err := self.mqttcom.Publish(ctx, msg); err {
-	case nil:
-		return nil
-	case mqtt.ErrNoSubscribers:
-		return errors.Annotatef(err, "mqttSend topic=%s", topic)
-	default:
-		return errors.Annotatef(err, "mqttSend packet=%v", p)
-	}
+	self.m.Publish(topic, 1, false, p.Payload)
+	return nil
+	// msg := &packet.Message{
+	// 	Topic:   topic,
+	// 	Payload: p.Payload,
+	// 	QOS:     packet.QOSAtLeastOnce,
+	// 	Retain:  false,
+	// }
+	// ctx, cancel := context.WithCancel(ctx)
+	// go func() {
+	// 	defer cancel()
+	// 	select {
+	// 	case <-self.alive.StopChan():
+	// 	case <-ctx.Done():
+	// 	}
+	// }()
+	// self.log.Debugf("mqtt publish topic=%s payload=%x", msg.Topic, msg.Payload)
+	// switch err := self.mqttcom.Publish(ctx, msg); err {
+	// case nil:
+	// 	return nil
+	// case mqttl.ErrNoSubscribers:
+	// 	return errors.Annotatef(err, "mqttSend topic=%s", topic)
+	// default:
+	// 	return errors.Annotatef(err, "mqttSend packet=%v", p)
+	// }
 }
 
-var reTopic = regexp.MustCompile(`^vm(-?\d+)/(\w+)/(.+)$`)
-var errTopicIgnore = fmt.Errorf("ignore irrelevant topic")
 
 func parsePacket(msg *packet.Message) (tele_api.Packet, error) {
 	// parseTopic vm13/w/1s
