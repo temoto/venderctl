@@ -17,6 +17,9 @@ type Config struct { //nolint:maligned
 	LogDebug     bool `hcl:"log_debug"`
 	MqttLogDebug bool `hcl:"mqtt_log_debug"`
 
+	MqttBroker string `hcl:"mqtt_broker"`
+	TLS        TLS    `hcl:"tls"`
+
 	Connect *Connect `hcl:"connect"`
 
 	Listens []Listen `hcl:"listen"`
@@ -35,7 +38,7 @@ const (
 	ModeDisabled Mode = ""
 	ModeClient   Mode = "client"
 	ModeServer   Mode = "server"
-	ModeTax		 Mode = "tax"
+	ModeTax      Mode = "tax"
 	ModeCommand  Mode = "command"
 	ModeSponge   Mode = "sponge"
 )
@@ -67,6 +70,10 @@ func (c *Config) SetMode(m string) {
 	switch m {
 	case "sponge":
 		c.Mode = ModeSponge
+	case "tax":
+		c.Mode = ModeTax
+	case "command":
+		c.Mode = ModeCommand
 	default:
 		c.Mode = ModeDisabled
 	}

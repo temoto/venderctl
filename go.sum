@@ -18,6 +18,8 @@ github.com/eclipse/paho.mqtt.golang v1.2.0 h1:1F8mhG9+aO5/xpdtFkW4SxOJB67ukuDC3t
 github.com/eclipse/paho.mqtt.golang v1.2.0/go.mod h1:H9keYFcgq3Qr5OUJm/JZI/i6U7joQ8SYLhZwfeOo6Ts=
 github.com/eclipse/paho.mqtt.golang v1.2.1-0.20200918111050-ba85050a1f23 h1:znRijtV5P9m5mmDsy4oesCPlCIPDILTj4wosaZWsTpY=
 github.com/eclipse/paho.mqtt.golang v1.2.1-0.20200918111050-ba85050a1f23/go.mod h1:eTzb4gxwwyWpqBUHGQZ4ABAV7+Jgm1PklsYT/eo8Hcc=
+github.com/eclipse/paho.mqtt.golang v1.3.0 h1:MU79lqr3FKNKbSrGN7d7bNYqh8MwWW7Zcx0iG+VIw9I=
+github.com/eclipse/paho.mqtt.golang v1.3.0/go.mod h1:eTzb4gxwwyWpqBUHGQZ4ABAV7+Jgm1PklsYT/eo8Hcc=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/flynn-archive/go-shlex v0.0.0-20150515145356-3f9db97f8568/go.mod h1:rZfgFAXFS/z/lEd6LJmf9HVZ1LkgYiHx5pHhV5DR16M=
 github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV9I=
@@ -101,6 +103,9 @@ github.com/temoto/ru-nalog-go v0.6.1-0.20200126230605-d6d5bfc79675/go.mod h1:dSD
 github.com/temoto/spq v0.10.0/go.mod h1:LbzRQb1nFUnE3OdI4mhjcRBrD7G0ZtIO2nqtgs0ZK2U=
 github.com/temoto/vender v0.200301.0 h1:JvYHCNqah43F2NyhBr2CH9aaqney0297VbUt3UY+edQ=
 github.com/temoto/vender v0.200301.0/go.mod h1:80ZkF9InnAOYjIixnY+2xJg+I3bXHivNh8ImJDqNic8=
+github.com/temoto/vender v0.200930.0 h1:t5cvS/BDpA3vu3kZwURkvHsKc1NN3J8shv0TyEqvXFc=
+github.com/temoto/vender v0.200930.1-0.20201026053838-e0ae18ee26e1 h1:n+MrJyF9qmGlsB7JCtYE815DPoL05DhADKKAxBM0vlg=
+github.com/temoto/vender v0.200930.1-0.20201026053838-e0ae18ee26e1/go.mod h1:OLLUxmcIuUK71xATtww3NYC0y0Dm2Wk4oQFOYnYKStg=
 github.com/vmihailenco/tagparser v0.1.0 h1:u6yzKTY6gW/KxL/K2NTEQUOSXZipyGiIRarGjJKmQzU=
 github.com/vmihailenco/tagparser v0.1.0/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgqMEUPoW2WPyhdI=
 golang.org/x/crypto v0.0.0-20180910181607-0e37d006457b/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=

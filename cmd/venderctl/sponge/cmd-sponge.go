@@ -37,7 +37,7 @@ func spongeMain(ctx context.Context, flags *flag.FlagSet) error {
 	g.Config = state.MustReadConfig(g.Log, state.NewOsFullReader(), configPath)
 	g.Config.Tele.SetMode("sponge")
 
-//	g.Config.Tele.SetMode("sponge")
+	//	g.Config.Tele.SetMode("sponge")
 	// if err := g.Config.Tele.EnableClient(tele_config.RoleControl); err != nil {
 	// 	return err
 	// }
@@ -118,9 +118,11 @@ func onPacket(ctx context.Context, p tele_api.Packet) error {
 
 	case tele_api.PacketConnect:
 		c := false
-		if p.Payload[0]==1 {c =true}
+		if p.Payload[0] == 1 {
+			c = true
+		}
 		// c, _ := strconv.ParseBool(string(p.Payload))
-		return onConnect(ctx, dbConn, p.VmId,c)
+		return onConnect(ctx, dbConn, p.VmId, c)
 
 	case tele_api.PacketState:
 		s, err := p.State()
@@ -144,14 +146,13 @@ func onConnect(ctx context.Context, dbConn *pg.Conn, vmid int32, connect bool) e
 	g := state.GetGlobal(ctx)
 	g.Log.Infof("vm=%d connect=%t", vmid, connect)
 	dbConn = dbConn.WithParam("vmid", vmid).WithParam("connect", connect)
-var nn bool
-	_, err := dbConn.Query(pg.Scan(&nn),"select connect_update(?vmid, ?connect)")
+	var nn bool
+	_, err := dbConn.Query(pg.Scan(&nn), "select connect_update(?vmid, ?connect)")
 	err = errors.Annotatef(err, "db connect_update")
 	return err
 }
 
 func onState(ctx context.Context, dbConn *pg.Conn, vmid int32, s vender_api.State) error {
-	fmt.Printf("\033[41m onState sponge.go (%s)(%s) \033[0m\n",vmid,s)
 	g := state.GetGlobal(ctx)
 	g.Log.Infof("vm=%d state=%s", vmid, s.String())
 

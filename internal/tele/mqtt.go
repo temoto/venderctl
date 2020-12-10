@@ -29,32 +29,6 @@ func (self *tele) mqttInit(ctx context.Context, log *log2.Log) error {
 	if self.conf.MqttLogDebug {
 		mlog.SetLevel(log2.LDebug)
 	}
-
-	switch self.conf.Mode {
-	case tele_config.ModeDisabled: // disabled
-		return nil
-
-	case tele_config.ModeClient:
-		self.mopt = mqtt.NewClientOptions()
-		self.mopt.SetBinaryWill("tax/c", []byte{0x00}, 1, true)
-		self.mopt.SetOnConnectHandler(self.onConnectHandler)
-		return self.mqttInitClient(ctx, mlog)
-
-	case tele_config.ModeSponge:
-		self.mopt = mqtt.NewClientOptions()
-		self.mopt.SetBinaryWill("sponge/c", []byte{0x00}, 1, true)
-		self.mopt.SetOnConnectHandler(self.onConnectHandlerSponge)
-		return self.mqttInitClient(ctx, mlog)
-
-	case tele_config.ModeServer:
-		return self.mqttInitServer(ctx, mlog)
-
-	default:
-		panic(self.msgInvalidMode())
-	}
-}
-
-func (self *tele) mqttInitClient(ctx context.Context, mlog *log2.Log) error {
 	c := self.conf.Connect.URL
 	if c == "" {
 		panic("error client connect URL blank")
@@ -65,24 +39,52 @@ func (self *tele) mqttInitClient(ctx context.Context, mlog *log2.Log) error {
 	}
 	scheme := u.Scheme
 	host := u.Host
-	user := u.User.Username()
-	pass, _ := u.User.Password()
 	keepAlive := helpers.IntSecondConfigDefault(self.conf.Connect.KeepaliveSec, 60)
+
+	self.mopt = mqtt.NewClientOptions()
+	// FIXME move this to config
+	switch self.conf.Mode {
+	case tele_config.ModeDisabled: // disabled
+		return nil
+	case tele_config.ModeCommand:
+		self.mopt.SetOnConnectHandler(self.onConnectHandlerCommand)
+		self.mopt.SetClientID("command")
+		self.mopt.SetUsername("command")
+		self.mopt.SetPassword("commandpass")
+
+	case tele_config.ModeTax:
+		self.mopt.SetBinaryWill("tax/c", []byte{0x00}, 1, true)
+		self.mopt.SetOnConnectHandler(self.onConnectHandlerTax)
+		self.mopt.SetClientID("tax")
+		self.mopt.SetUsername("tax")
+		self.mopt.SetPassword("taxpass")
+
+	case tele_config.ModeSponge:
+		self.mopt.SetBinaryWill("sponge/c", []byte{0x00}, 1, true)
+		self.mopt.SetOnConnectHandler(self.onConnectHandlerSponge)
+		self.mopt.SetUsername("ctl")
+		self.mopt.SetClientID("ctl")
+		self.mopt.SetPassword("ctlpass")
+
+	case tele_config.ModeServer:
+		return self.mqttInitServer(ctx, mlog)
+
+	default:
+		panic(self.msgInvalidMode())
+	}
+
 	self.mopt.
 		AddBroker(strings.Join([]string{scheme, host}, "://")).
+		// FIXME add tsl
+		// SetTLSConfig(tlsconf).
+		// SetStore(mqtt.NewFileStore(storePath)).
 		SetCleanSession(false).
-		SetClientID(user).
-		SetUsername(user).
-		SetPassword(pass).
 		SetDefaultPublishHandler(self.messageHandler).
 		SetKeepAlive(keepAlive).
 		SetPingTimeout(keepAlive).
-		SetOrderMatters(false).
-		// SetTLSConfig(tlsconf).
+		SetOrderMatters(true).
 		SetResumeSubs(true).SetCleanSession(false).
-		// SetStore(mqtt.NewFileStore(storePath)).
 		SetConnectRetryInterval(keepAlive).
-		// SetOnConnectHandler(self.onConnectHandler).
 		SetConnectionLostHandler(self.connectLostHandler).
 		SetConnectRetry(true)
 
@@ -94,12 +96,6 @@ func (self *tele) mqttInitClient(ctx context.Context, mlog *log2.Log) error {
 	if err := token.Error(); err != nil {
 		panic(err)
 	}
-	// if token := self.m.Connect(); token.Wait() && token.Error() != nil {
-	// 	panic(token.Error())
-	// }
-
-	// fmt.Printf("\033[41m %s \033[0m\n", self.mopt)
-	// if !token.IsConnected()
 
 	self.log.Infof("connected to broker")
 	return nil
@@ -127,7 +123,6 @@ func (self *tele) messageHandler(c mqtt.Client, msg mqtt.Message) {
 	}
 }
 
-// var reTopic = regexp.MustCompile(`^vm(-?\d+)/(\w+)/(.+)$`)
 var reTopic = regexp.MustCompile(`^vm(-?\d+)/(\w+)/?(.+)?$`)
 var errTopicIgnore = fmt.Errorf("ignore irrelevant topic")
 
@@ -160,9 +155,17 @@ func parseTopic(msg mqtt.Message) (tele_api.Packet, error) {
 	return p, nil
 }
 
-func (self *tele) onConnectHandler(c mqtt.Client) {
-	if token := c.Subscribe("#", 1, nil); token.Wait() && token.Error() != nil {
-		self.log.Errorf("Subscribe error")
+func (self *tele) onConnectHandlerCommand(c mqtt.Client) {
+	if token := c.Subscribe("+/cr/+", 1, nil); token.Wait() && token.Error() != nil {
+		self.log.Errorf("commnad subscribe  error")
+	} else {
+		self.log.Debugf("Subscribe Ok")
+	}
+}
+
+func (self *tele) onConnectHandlerTax(c mqtt.Client) {
+	if token := c.Subscribe("+/cr/+", 1, nil); token.Wait() && token.Error() != nil {
+		self.log.Errorf("tax subscribe error")
 	} else {
 		self.log.Debugf("Subscribe Ok")
 		c.Publish("tax/c", 1, true, []byte{0x01})
@@ -170,8 +173,8 @@ func (self *tele) onConnectHandler(c mqtt.Client) {
 }
 
 func (self *tele) onConnectHandlerSponge(c mqtt.Client) {
-	if token := c.Subscribe("#", 1, nil); token.Wait() && token.Error() != nil {
-		self.log.Errorf("Subscribe error")
+	if token := c.Subscribe("+/#", 1, nil); token.Wait() && token.Error() != nil {
+		self.log.Errorf("sponge subscribe error")
 	} else {
 		self.log.Debugf("Subscribe Ok")
 		c.Publish("sponge/c", 1, true, []byte{0x01})
@@ -382,6 +385,7 @@ func (self *tele) mqttAuthorize(id, username string, allowRoles []string, listen
 }
 
 func (self *tele) mqttSend(ctx context.Context, p tele_api.Packet) error {
+	fmt.Printf("\033[41m mqttsend (%v) \033[0m\n", p)
 	if p.Kind != tele_api.PacketCommand {
 		return errors.Errorf("code error mqtt not implemented Send packet=%v", p)
 	}
@@ -412,7 +416,6 @@ func (self *tele) mqttSend(ctx context.Context, p tele_api.Packet) error {
 	// 	return errors.Annotatef(err, "mqttSend packet=%v", p)
 	// }
 }
-
 
 func parsePacket(msg *packet.Message) (tele_api.Packet, error) {
 	// parseTopic vm13/w/1s
