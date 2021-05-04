@@ -16,7 +16,7 @@ import (
 	"github.com/temoto/vender/helpers"
 	"github.com/temoto/vender/log2"
 	vender_api "github.com/temoto/vender/tele"
-	mqttl "github.com/temoto/vender/tele/mqtt"
+	// mqttl "github.com/temoto/vender/tele/mqtt"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
 	tele_config "github.com/temoto/venderctl/internal/tele/config"
 	"gopkg.in/hlandau/passlib.v1"
@@ -66,8 +66,8 @@ func (self *tele) mqttInit(ctx context.Context, log *log2.Log) error {
 		self.mopt.SetClientID("ctl")
 		self.mopt.SetPassword("ctlpass")
 
-	case tele_config.ModeServer:
-		return self.mqttInitServer(ctx, mlog)
+	// case tele_config.ModeServer:
+	// 	return self.mqttInitServer(ctx, mlog)
 
 	default:
 		panic(self.msgInvalidMode())
@@ -186,45 +186,45 @@ func (self *tele) connectLostHandler(c mqtt.Client, err error) {
 	self.log.Debugf("broker connection lost.")
 }
 
-func (self *tele) mqttInitServer(ctx context.Context, mlog *log2.Log) error {
-	self.mqttsrv = mqttl.NewServer(mqttl.ServerOptions{
-		Log: mlog,
-		ForceSubs: []packet.Subscription{
-			{Topic: "%c/r/#", QOS: packet.QOSAtLeastOnce},
-		},
-		OnConnect: self.mqttOnConnect,
-		OnClose:   self.mqttOnClose,
-		OnPublish: self.mqttServerOnPublish,
-	})
-	errs := make([]error, 0)
-	opts := make([]*mqttl.BackendOptions, 0, len(self.conf.Listens))
-	for _, l := range self.conf.Listens {
-		tlsconf, err := l.TLS.TLSConfig()
-		if err != nil {
-			err = errors.Annotate(err, "TLS")
-			errs = append(errs, err)
-			continue
-		}
+// func (self *tele) mqttInitServer(ctx context.Context, mlog *log2.Log) error {
+// 	self.mqttsrv = mqttl.NewServer(mqttl.ServerOptions{
+// 		Log: mlog,
+// 		ForceSubs: []packet.Subscription{
+// 			{Topic: "%c/r/#", QOS: packet.QOSAtLeastOnce},
+// 		},
+// 		OnConnect: self.mqttOnConnect,
+// 		OnClose:   self.mqttOnClose,
+// 		OnPublish: self.mqttServerOnPublish,
+// 	})
+// 	errs := make([]error, 0)
+// 	opts := make([]*mqttl.BackendOptions, 0, len(self.conf.Listens))
+// 	for _, l := range self.conf.Listens {
+// 		tlsconf, err := l.TLS.TLSConfig()
+// 		if err != nil {
+// 			err = errors.Annotate(err, "TLS")
+// 			errs = append(errs, err)
+// 			continue
+// 		}
 
-		opt := &mqttl.BackendOptions{
-			URL:            l.URL,
-			TLS:            tlsconf,
-			CtxData:        l,
-			NetworkTimeout: helpers.IntSecondDefault(l.NetworkTimeoutSec, defaultNetworkTimeout),
-		}
-		opts = append(opts, opt)
-	}
-	errs = append(errs, self.secrets.CachedReadFile(self.conf.SecretsPath, SecretsStale))
-	if err := helpers.FoldErrors(errs); err != nil {
-		return err
-	}
-	err := self.mqttsrv.Listen(ctx, opts)
-	if err == nil {
-		self.mqttcom = self.mqttsrv
-		self.log.Infof("mqtt started listen=%q", self.mqttsrv.Addrs())
-	}
-	return errors.Annotate(err, "mqtt Server.Init")
-}
+// 		opt := &mqttl.BackendOptions{
+// 			URL:            l.URL,
+// 			TLS:            tlsconf,
+// 			CtxData:        l,
+// 			NetworkTimeout: helpers.IntSecondDefault(l.NetworkTimeoutSec, defaultNetworkTimeout),
+// 		}
+// 		opts = append(opts, opt)
+// 	}
+// 	errs = append(errs, self.secrets.CachedReadFile(self.conf.SecretsPath, SecretsStale))
+// 	if err := helpers.FoldErrors(errs); err != nil {
+// 		return err
+// 	}
+// 	err := self.mqttsrv.Listen(ctx, opts)
+// 	if err == nil {
+// 		self.mqttcom = self.mqttsrv
+// 		self.log.Infof("mqtt started listen=%q", self.mqttsrv.Addrs())
+// 	}
+// 	return errors.Annotate(err, "mqtt Server.Init")
+// }
 
 func (self *tele) mqttOnClose(clientid string, clean bool, e error) {
 	fmt.Printf("\033[41m mqttOnClose \033[0m\n")
@@ -246,24 +246,24 @@ func (self *tele) mqttOnClose(clientid string, clean bool, e error) {
 	}
 }
 
-func (self *tele) mqttOnConnect(ctx context.Context, opt *mqttl.BackendOptions, pkt *packet.Connect) (bool, error) {
-	fmt.Printf("\033[41m mqttOnConnect \033[0m\n")
-	if err := self.secrets.CachedReadFile(self.conf.SecretsPath, SecretsStale); err != nil {
-		return false, err
-	}
-	if err := self.secrets.Verify(pkt.Username, pkt.Password); err != nil {
-		self.log.Errorf("authenticate user=%s err=%v", pkt.Username, err)
-		return false, nil
-	}
+// func (self *tele) mqttOnConnect(ctx context.Context, opt *mqttl.BackendOptions, pkt *packet.Connect) (bool, error) {
+// 	fmt.Printf("\033[41m mqttOnConnect \033[0m\n")
+// 	if err := self.secrets.CachedReadFile(self.conf.SecretsPath, SecretsStale); err != nil {
+// 		return false, err
+// 	}
+// 	if err := self.secrets.Verify(pkt.Username, pkt.Password); err != nil {
+// 		self.log.Errorf("authenticate user=%s err=%v", pkt.Username, err)
+// 		return false, nil
+// 	}
 
-	allowRoles := opt.CtxData.(tele_config.Listen).AllowRoles
-	if _, err := self.mqttAuthorize(pkt.ClientID, pkt.Username, allowRoles, opt.URL); err != nil {
-		err = errors.Annotate(err, "tele.mqttAuthorize")
-		self.log.Error(err)
-		return false, nil
-	}
-	return true, nil
-}
+// 	allowRoles := opt.CtxData.(tele_config.Listen).AllowRoles
+// 	if _, err := self.mqttAuthorize(pkt.ClientID, pkt.Username, allowRoles, opt.URL); err != nil {
+// 		err = errors.Annotate(err, "tele.mqttAuthorize")
+// 		self.log.Error(err)
+// 		return false, nil
+// 	}
+// 	return true, nil
+// }
 
 func (self *tele) mqttClientOnPublish(msg *packet.Message) error {
 	fmt.Printf("\033[41m mqttClientOnPublish \033[0m\n")
