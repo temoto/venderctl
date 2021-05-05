@@ -385,7 +385,6 @@ func (self *tele) mqttAuthorize(id, username string, allowRoles []string, listen
 }
 
 func (self *tele) mqttSend(ctx context.Context, p tele_api.Packet) error {
-	fmt.Printf("\033[41m mqttsend (%v) \033[0m\n", p)
 	if p.Kind != tele_api.PacketCommand {
 		return errors.Errorf("code error mqtt not implemented Send packet=%v", p)
 	}
