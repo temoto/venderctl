@@ -13,7 +13,7 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/temoto/alive/v2 v2.0.0
 	github.com/temoto/ru-nalog-go v0.6.1-0.20200126230605-d6d5bfc79675
-	github.com/temoto/vender v0.210504.0
+	github.com/temoto/vender v0.210504.1-0.20210514075122-213beb3a7d96
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	gopkg.in/hlandau/easymetric.v1 v1.0.0 // indirect
 	gopkg.in/hlandau/measurable.v1 v1.0.1 // indirect

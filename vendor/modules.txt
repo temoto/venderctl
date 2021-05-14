@@ -60,7 +60,7 @@ github.com/temoto/alive/v2
 ## explicit
 github.com/temoto/ru-nalog-go
 github.com/temoto/ru-nalog-go/umka
-# github.com/temoto/vender v0.210504.0
+# github.com/temoto/vender v0.210504.1-0.20210514075122-213beb3a7d96
 ## explicit
 github.com/temoto/vender/currency
 github.com/temoto/vender/helpers
