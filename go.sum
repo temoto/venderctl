@@ -1,3 +1,9 @@
+#github.com/temoto/vender v0.210504.1-0.20210514075122-213beb3a7d96 h1:ZlEyw/gtVbuc28OBkaOYVBRIMB307iHueiimkoOYP+A=
+#github.com/temoto/vender v0.210504.1-0.20210514075122-213beb3a7d96/go.mod h1:kKkcPgykMPrHqdUgcggYRGxriUP2xzZHYa7QqQHOGyw=
+#github.com/temoto/vender v0.210504.1-0.20210515052440-f98206127290 h1:xZLyyVIDv2z0TBr87FZlh+4+dbEtR0XsrJTgWJVf1yQ=
+#github.com/temoto/vender v0.210504.1-0.20210515052440-f98206127290/go.mod h1:kKkcPgykMPrHqdUgcggYRGxriUP2xzZHYa7QqQHOGyw=
+#github.com/temoto/vender v0.210504.1-0.20210518055414-6b4f2dd436a8 h1:/J4Gi/0yMhRXJiacJPB98vqLFJLoXN218xmrhMzE1Zs=
+#github.com/temoto/vender v0.210504.1-0.20210518055414-6b4f2dd436a8/go.mod h1:kKkcPgykMPrHqdUgcggYRGxriUP2xzZHYa7QqQHOGyw=
 github.com/256dpi/gomqtt v0.14.1 h1:Qo+gS8kMluN5swEKqzHilWyeDyVvt53p+rHrc2h4JgQ=
 github.com/256dpi/gomqtt v0.14.1/go.mod h1:2y4qpvxskFCnQpLIdEY5HG55zqXgAjB88xqrBbZsQRg=
 github.com/256dpi/mercury v0.2.0 h1:ImB0JYuZ28kwp2MpqnMdQFSD3z9mgaNYHrSjYuyP0LI=
@@ -94,8 +100,8 @@ github.com/temoto/iodin v0.0.0-20190211111721-99c87617ba86/go.mod h1:PSCCOZs9yzx
 github.com/temoto/ru-nalog-go v0.6.1-0.20200126230605-d6d5bfc79675 h1:WXGyy/+sYZrm1ECaaZ36mJDKkVXziHAJMP3zhC7geTs=
 github.com/temoto/ru-nalog-go v0.6.1-0.20200126230605-d6d5bfc79675/go.mod h1:dSD3JpwDLmkzjZZAkbJsC2ivLIM/dv2P51TO3y85PAQ=
 github.com/temoto/spq v0.10.0/go.mod h1:LbzRQb1nFUnE3OdI4mhjcRBrD7G0ZtIO2nqtgs0ZK2U=
-github.com/temoto/vender v0.210504.1-0.20210514075122-213beb3a7d96 h1:ZlEyw/gtVbuc28OBkaOYVBRIMB307iHueiimkoOYP+A=
-github.com/temoto/vender v0.210504.1-0.20210514075122-213beb3a7d96/go.mod h1:kKkcPgykMPrHqdUgcggYRGxriUP2xzZHYa7QqQHOGyw=
+github.com/temoto/vender v0.210504.1-0.20210518055414-6b4f2dd436a8 h1:/J4Gi/0yMhRXJiacJPB98vqLFJLoXN218xmrhMzE1Zs=
+github.com/temoto/vender v0.210504.1-0.20210518055414-6b4f2dd436a8/go.mod h1:kKkcPgykMPrHqdUgcggYRGxriUP2xzZHYa7QqQHOGyw=
 github.com/vmihailenco/tagparser v0.1.0 h1:u6yzKTY6gW/KxL/K2NTEQUOSXZipyGiIRarGjJKmQzU=
 github.com/vmihailenco/tagparser v0.1.0/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgqMEUPoW2WPyhdI=
 golang.org/x/crypto v0.0.0-20180910181607-0e37d006457b/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=

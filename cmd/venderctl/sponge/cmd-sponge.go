@@ -196,7 +196,10 @@ func onTelemetry(ctx context.Context, dbConn *pg.Conn, vmid int32, t *vender_api
 	errs := make([]error, 0)
 	if t.Error != nil {
 		const q = `insert into error (vmid,vmtime,received,app_version,code,message,count) values (?vmid,to_timestamp(?vmtime/1e9),current_timestamp,?0,?1,?2,?3)`
-		_, err := dbConn.Exec(q, t.BuildVersion, t.Error.Code, t.Error.Message, t.Error.Count)
+		// AlexM set BuildVersion after connect
+		// _, err := dbConn.Exec(q, t.BuildVersion, t.Error.Code, t.Error.Message, t.Error.Count)
+
+		_, err := dbConn.Exec(q, "", t.Error.Code, t.Error.Message, t.Error.Count)
 		if err != nil {
 			errs = append(errs, errors.Annotatef(err, "db query=%s t=%s", q, proto.CompactTextString(t)))
 		}

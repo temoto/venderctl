@@ -30,10 +30,10 @@ const defaultNetworkTimeout = 3 * time.Second
 
 type tele struct { //nolint:maligned
 	sync.RWMutex
-	alive   *alive.Alive
-	conf    tele_config.Config
-	log     *log2.Log
-	pch     chan tele_api.Packet
+	alive *alive.Alive
+	conf  tele_config.Config
+	log   *log2.Log
+	pch   chan tele_api.Packet
 	// mqttsrv *mqtt1.Server
 	// mqttcli *mqtt1.Client
 	m       mqtt.Client

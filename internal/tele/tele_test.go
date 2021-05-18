@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/temoto/vender/log2"
-//	"github.com/temoto/vender/tele/mqtt"
+	//	"github.com/temoto/vender/tele/mqtt"
 	state_new "github.com/temoto/venderctl/internal/state/new"
 	"gopkg.in/hlandau/passlib.v1"
 )

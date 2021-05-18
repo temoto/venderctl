@@ -29,6 +29,7 @@ enum State {
   Lock = 6;
   Client = 7;
   TempProblem = 8;
+  Shutdown = 9;
 }
 
 // Optimising for rare, bulk delivery on cell network.
@@ -44,7 +45,7 @@ message Telemetry {
   Money money_save = 8;
   Money money_change = 9;
   bool at_service = 16;
-  string build_version = 17;
+//  string build_version = 17;
 
   message Error {
     uint32 code = 1;
