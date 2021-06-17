@@ -2,7 +2,6 @@ package tele_api
 
 import (
 	"context"
-	"time"
 
 	"github.com/temoto/vender/log2"
 	vender_api "github.com/temoto/vender/tele"
@@ -14,7 +13,7 @@ type Teler interface {
 	Close() error
 	Addrs() []string
 	Chan() <-chan Packet
-	CommandTx(vmid int32, c *vender_api.Command, timeout time.Duration) (*vender_api.Response, error)
+	CommandTx(vmid int32, c *vender_api.Command) (*vender_api.Response, error)
 }
 
 type stub struct{}
@@ -29,6 +28,6 @@ func (stub) Addrs() []string { return nil }
 
 func (stub) Chan() <-chan Packet { return nil }
 
-func (stub) CommandTx(vmid int32, c *vender_api.Command, timeout time.Duration) (*vender_api.Response, error) {
+func (stub) CommandTx(vmid int32, c *vender_api.Command) (*vender_api.Response, error) {
 	return nil, nil
 }

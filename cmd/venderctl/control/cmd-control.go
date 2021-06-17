@@ -64,7 +64,7 @@ func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 		cmd := &vender_api.Command{
 			Task: &vender_api.Command_Report{Report: &vender_api.Command_ArgReport{}},
 		}
-		_, err := g.Tele.CommandTx(targetId, cmd, replyTimeout)
+		_, err := g.Tele.CommandTx(targetId, cmd)
 		return err
 
 	case "ping":
@@ -74,7 +74,7 @@ func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 				Lock:     false,
 			}},
 		}
-		_, err := g.Tele.CommandTx(targetId, cmd, replyTimeout)
+		_, err := g.Tele.CommandTx(targetId, cmd)
 		return err
 
 	case "set-inventory":
@@ -97,7 +97,7 @@ func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 				Lock:     true,
 			}},
 		}
-		_, err := g.Tele.CommandTx(targetId, cmd, replyTimeout)
+		_, err := g.Tele.CommandTx(targetId, cmd)
 		return err
 
 	case "lock":
@@ -117,7 +117,7 @@ func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 		cmd := &vender_api.Command{
 			Task: &vender_api.Command_Lock{Lock: &vender_api.Command_ArgLock{Duration: sec}},
 		}
-		_, err = g.Tele.CommandTx(targetId, cmd, replyTimeout+duration)
+		_, err = g.Tele.CommandTx(targetId, cmd)
 		return err
 
 	case "qr":
@@ -126,7 +126,7 @@ func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 			Deadline: time.Now().Add(2 * time.Minute).UnixNano(),
 			Task:     &vender_api.Command_Show_QR{Show_QR: &vender_api.Command_ArgShowQR{QrText: qrText}},
 		}
-		_, err := g.Tele.CommandTx(targetId, cmd, replyTimeout)
+		_, err := g.Tele.CommandTx(targetId, cmd)
 		return err
 
 	default:

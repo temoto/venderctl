@@ -9,7 +9,7 @@ package tele
 import (
 	"context"
 	"fmt"
-	"math/rand"
+	// "math/rand"
 	"sync"
 	"time"
 
@@ -91,13 +91,6 @@ func (self *tele) Addrs() []string {
 func (self *tele) Chan() <-chan tele_api.Packet { return self.pch }
 
 func (self *tele) SendCommand(vmid int32, c *vender_api.Command) error {
-	if c.Id == 0 {
-		c.Id = rand.Uint32()
-	}
-	if c.ReplyTopic == "" {
-		c.ReplyTopic = fmt.Sprintf("cr/%d", c.Id)
-	}
-
 	payload, err := proto.Marshal(c)
 	if err != nil {
 		return errors.Trace(err)
@@ -109,16 +102,12 @@ func (self *tele) SendCommand(vmid int32, c *vender_api.Command) error {
 	return errors.Annotate(err, "tele.SendCommand")
 }
 
-// Will consume and drop irrelevant packets from pch.
-func (self *tele) CommandTx(vmid int32, c *vender_api.Command, timeout time.Duration) (*vender_api.Response, error) {
-	if c.Deadline == 0 {
-		c.Deadline = time.Now().Add(timeout).UnixNano()
-	}
+func (self *tele) CommandTx(vmid int32, c *vender_api.Command) (*vender_api.Response, error) {
 	if err := self.SendCommand(vmid, c); err != nil {
 		return nil, errors.Annotate(err, "CommandTx")
 	}
 
-	tmr := time.NewTimer(timeout)
+	tmr := time.NewTimer(5 * time.Second)
 	defer tmr.Stop()
 	for {
 		select {
