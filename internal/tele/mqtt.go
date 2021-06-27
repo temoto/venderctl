@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	// "github.com/256dpi/gomqtt/client/future"
-	// "github.com/256dpi/gomqtt/packet"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/juju/errors"
 	"github.com/temoto/vender/helpers"
@@ -40,6 +38,13 @@ func (self *tele) mqttInit(ctx context.Context, log *log2.Log) error {
 	scheme := u.Scheme
 	host := u.Host
 	keepAlive := helpers.IntSecondConfigDefault(self.conf.Connect.KeepaliveSec, 60)
+	pingTimeout := helpers.IntSecondConfigDefault(self.conf.Connect.PingTimeoutSec, 30)
+	retryInterval := helpers.IntSecondConfigDefault(self.conf.Connect.KeepaliveSec/2, 30)
+
+	mqtt.ERROR = log
+	mqtt.CRITICAL = log
+	mqtt.WARN = log
+	var mqttClientId, mqttClientPass string
 
 	self.mopt = mqtt.NewClientOptions()
 	// FIXME move this to config
@@ -48,29 +53,24 @@ func (self *tele) mqttInit(ctx context.Context, log *log2.Log) error {
 		return nil
 	case tele_config.ModeCommand:
 		self.mopt.SetOnConnectHandler(self.onConnectHandlerCommand)
-		self.mopt.SetClientID("command")
-		self.mopt.SetUsername("command")
-		self.mopt.SetPassword("commandpass")
-
+		mqttClientId = "command"
+		mqttClientPass = "commandpass"
 	case tele_config.ModeTax:
 		self.mopt.SetBinaryWill("tax/c", []byte{0x00}, 1, true)
 		self.mopt.SetOnConnectHandler(self.onConnectHandlerTax)
-		self.mopt.SetClientID("tax")
-		self.mopt.SetUsername("tax")
-		self.mopt.SetPassword("taxpass")
-
+		mqttClientId = "tax"
+		mqttClientPass = "taxpass"
 	case tele_config.ModeSponge:
 		self.mopt.SetBinaryWill("sponge/c", []byte{0x00}, 1, true)
 		self.mopt.SetOnConnectHandler(self.onConnectHandlerSponge)
-		self.mopt.SetUsername("ctl")
-		self.mopt.SetClientID("ctl")
-		self.mopt.SetPassword("ctlpass")
-
-	// case tele_config.ModeServer:
-	// 	return self.mqttInitServer(ctx, mlog)
-
+		mqttClientId = "ctl"
+		mqttClientPass = "ctlpass"
 	default:
 		panic(self.msgInvalidMode())
+	}
+
+	credFun := func() (string, string) {
+		return mqttClientId, mqttClientPass
 	}
 
 	self.mopt.
@@ -79,12 +79,14 @@ func (self *tele) mqttInit(ctx context.Context, log *log2.Log) error {
 		// SetTLSConfig(tlsconf).
 		// SetStore(mqtt.NewFileStore(storePath)).
 		SetCleanSession(false).
+		SetClientID(mqttClientId).
+		SetCredentialsProvider(credFun).
 		SetDefaultPublishHandler(self.messageHandler).
 		SetKeepAlive(keepAlive).
-		SetPingTimeout(keepAlive).
-		SetOrderMatters(true).
+		SetPingTimeout(pingTimeout).
+		SetOrderMatters(false).
 		SetResumeSubs(true).SetCleanSession(false).
-		SetConnectRetryInterval(keepAlive).
+		SetConnectRetryInterval(retryInterval).
 		SetConnectionLostHandler(self.connectLostHandler).
 		SetConnectRetry(true)
 
@@ -156,7 +158,7 @@ func parseTopic(msg mqtt.Message) (tele_api.Packet, error) {
 }
 
 func (self *tele) onConnectHandlerCommand(c mqtt.Client) {
-	if token := c.Subscribe("+/cr", 1, nil); token.Wait() && token.Error() != nil {
+	if token := c.Subscribe("+/cr", 0, nil); token.Wait() && token.Error() != nil {
 		self.log.Errorf("commnad subscribe  error")
 	} else {
 		self.log.Debugf("Subscribe Ok")
@@ -164,10 +166,10 @@ func (self *tele) onConnectHandlerCommand(c mqtt.Client) {
 }
 
 func (self *tele) onConnectHandlerTax(c mqtt.Client) {
-	if token := c.Subscribe("+/cr", 1, nil); token.Wait() && token.Error() != nil {
-		self.log.Errorf("tax subscribe error")
+	if token := c.Subscribe("+/#", 0, nil); token.Wait() && token.Error() != nil {
+		self.log.Errorf("tax connect subscribe error")
 	} else {
-		self.log.Debugf("Subscribe Ok")
+		self.log.Infof("Subscribe (connect) Ok")
 		c.Publish("tax/c", 1, true, []byte{0x01})
 	}
 }

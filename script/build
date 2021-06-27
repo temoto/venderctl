@@ -2,6 +2,8 @@
 set -eu
 base="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
+go fmt ./...
+
 main() {
   local gopkg="./cmd/venderctl"
   local name=venderctl

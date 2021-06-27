@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/256dpi/gomqtt/packet"
+	// "github.com/256dpi/gomqtt/packet"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/golang/protobuf/proto"
 	"github.com/juju/errors"
@@ -34,14 +34,12 @@ type tele struct { //nolint:maligned
 	conf  tele_config.Config
 	log   *log2.Log
 	pch   chan tele_api.Packet
-	// mqttsrv *mqtt1.Server
-	// mqttcli *mqtt1.Client
-	m       mqtt.Client
-	mopt    *mqtt.ClientOptions
-	mqttcom interface {
-		Close() error
-		Publish(context.Context, *packet.Message) error
-	}
+	m     mqtt.Client
+	mopt  *mqtt.ClientOptions
+	// mqttcom interface {
+	// 	Close() error
+	// 	Publish(context.Context, *packet.Message) error
+	// }
 	secrets Secrets
 }
 
@@ -64,14 +62,15 @@ func (self *tele) Init(ctx context.Context, log *log2.Log, teleConfig tele_confi
 }
 
 func (self *tele) Close() error {
-	switch self.conf.Mode {
-	case tele_config.ModeDisabled:
-		return nil
-	case tele_config.ModeClient, tele_config.ModeServer:
-		return self.mqttcom.Close()
-	default:
-		panic(self.msgInvalidMode())
+	// fmt.Printf("\n\033[41m mqtt unsubscribe \033[0m\n\n")
+	self.log.Infof("mqtt unsubscribe")
+	if token := self.m.Unsubscribe("#"); token.Wait() && token.Error() != nil {
+		// fmt.Printf("\n\033[41m mqtt unsubscribe error \033[0m\n\n")
+		self.log.Infof("mqtt unsubscribe error")
+		// global.Log.Infof("mqtt unsubscribe error")
+		return token.Error()
 	}
+	return nil
 }
 
 func (self *tele) Addrs() []string {

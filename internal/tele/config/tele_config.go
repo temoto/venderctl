@@ -48,6 +48,7 @@ type Connect struct { //nolint:maligned
 	URL               string `hcl:"url"`
 	TLS               TLS    `hcl:"tls"`
 	KeepaliveSec      int    `hcl:"keepalive_sec"`
+	PingTimeoutSec    int    `hcl:"ping_timeout_sec"`
 	NetworkTimeoutSec int    `hcl:"network_timeout_sec"`
 }
 

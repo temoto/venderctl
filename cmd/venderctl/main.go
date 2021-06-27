@@ -6,10 +6,7 @@ import (
 	"fmt"
 	// "net"
 	// "net/http"
-	_ "net/http/pprof" //#nosec G108
-	"os"
-	"strings"
-
+	// _ "net/http/pprof" //#nosec G108
 	"github.com/juju/errors"
 	"github.com/temoto/vender/log2"
 	"github.com/temoto/venderctl/cmd/internal/cli"
@@ -21,6 +18,10 @@ import (
 	// "github.com/temoto/venderctl/internal/state"
 	state_new "github.com/temoto/venderctl/internal/state/new"
 	"github.com/temoto/venderctl/internal/tele"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
 )
 
 var log = log2.NewStderr(log2.LDebug)
@@ -90,6 +91,15 @@ func main() {
 			}
 
 			ctx, g := state_new.NewContext(cmdName, log, tele.NewTele())
+
+			// working term signal
+			sigs := make(chan os.Signal, 1)
+			signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+			go func() {
+				_ = <-sigs
+				g.CtlStop(ctx)
+			}()
+
 			g.BuildVersion = BuildVersion
 
 			if cli.SdNotify("start " + cmdName) {

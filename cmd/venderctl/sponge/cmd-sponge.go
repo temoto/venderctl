@@ -121,7 +121,9 @@ func onPacket(ctx context.Context, p tele_api.Packet) error {
 		if p.Payload[0] == 1 {
 			c = true
 		}
-		// c, _ := strconv.ParseBool(string(p.Payload))
+		r := g.Vmc[p.VmId]
+		r.Connect = c
+		g.Vmc[p.VmId] = r
 		return onConnect(ctx, dbConn, p.VmId, c)
 
 	case tele_api.PacketState:
@@ -129,6 +131,9 @@ func onPacket(ctx context.Context, p tele_api.Packet) error {
 		if err != nil {
 			return err
 		}
+		r := g.Vmc[p.VmId]
+		r.State = s
+		g.Vmc[p.VmId] = r
 		return onState(ctx, dbConn, p.VmId, s)
 
 	case tele_api.PacketTelemetry:
