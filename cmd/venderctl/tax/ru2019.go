@@ -154,7 +154,7 @@ func processRu2019Final(ctx context.Context, db *pg.Conn, tj *MTaxJob, note stri
 		const replyTimeout = time.Minute
 		vmid := tj.Ops[0].Vmid
 		cmd := &vender_api.Command{
-			Deadline: time.Now().Add(2 * time.Minute).UnixNano(),
+			// Deadline: time.Now().Add(2 * time.Minute).UnixNano(),
 			Task: &vender_api.Command_Show_QR{Show_QR: &vender_api.Command_ArgShowQR{
 				Layout: "tax-ru19",
 				QrText: tj.ExtId,

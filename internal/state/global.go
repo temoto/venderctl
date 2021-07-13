@@ -3,6 +3,10 @@ package state
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"os"
+	"time"
+
 	"github.com/go-pg/pg/v9"
 	"github.com/juju/errors"
 	"github.com/temoto/alive/v2"
@@ -10,9 +14,6 @@ import (
 	"github.com/temoto/vender/log2"
 	vender_api "github.com/temoto/vender/tele"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
-	"net/url"
-	"os"
-	"time"
 )
 
 type Global struct {
@@ -23,6 +24,7 @@ type Global struct {
 	Log          *log2.Log
 	Tele         tele_api.Teler
 	Vmc          map[int32]vmcStruct
+	// Vmc map[int32]bool
 }
 
 type vmcStruct struct {
@@ -31,6 +33,12 @@ type vmcStruct struct {
 }
 
 const ContextKey = "run/state-global"
+
+func (g *Global) InitVMC() {
+	g.Vmc = make(map[int32]vmcStruct)
+	// g.Vmc[1] = true
+
+}
 
 func GetGlobal(ctx context.Context) *Global {
 	v := ctx.Value(ContextKey)
@@ -50,7 +58,6 @@ func (g *Global) CtlStop(ctx context.Context) {
 }
 
 func (g *Global) InitDB(cmdName string) error {
-	g.Vmc = make(map[int32]vmcStruct)
 	pingTimeout := helpers.IntMillisecondDefault(g.Config.DB.PingTimeoutMs, 5*time.Second)
 
 	dbOpt, err := pg.ParseURL(g.Config.DB.URL)

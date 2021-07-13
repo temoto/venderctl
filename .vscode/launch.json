@@ -4,11 +4,16 @@
         
         {
             "name": "Launch Package",
+            "env": {            "app_ver": "0.3.1",            },
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/cmd/venderctl/main.go",
-            "args": ["-config","/home/alexm/dev.hcl","control","-1","exec","envs.print"]
+            "buildFlags": "-ldflags='-X main.version=${env:app_ver}'",
+            // "args": ["-config","/home/alexm/dev.hcl","control","-1","exec","sleep(5s)"]
+
+            "args": ["-config","/home/alexm/dev.hcl","telegram"]
+            // "args": ["-config","/home/alexm/dev.hcl","tax"]
         },
     ]
 }

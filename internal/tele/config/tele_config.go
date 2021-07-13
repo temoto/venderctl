@@ -41,6 +41,7 @@ const (
 	ModeTax      Mode = "tax"
 	ModeCommand  Mode = "command"
 	ModeSponge   Mode = "sponge"
+	ModeTelegram Mode = "telegram"
 )
 
 type Connect struct { //nolint:maligned
@@ -75,6 +76,8 @@ func (c *Config) SetMode(m string) {
 		c.Mode = ModeTax
 	case "command":
 		c.Mode = ModeCommand
+	case "telegram":
+		c.Mode = ModeTelegram
 	default:
 		c.Mode = ModeDisabled
 	}

@@ -9,6 +9,7 @@ package tele
 import (
 	"context"
 	"fmt"
+
 	// "math/rand"
 	"sync"
 	"time"
@@ -20,13 +21,13 @@ import (
 	"github.com/temoto/alive/v2"
 	"github.com/temoto/vender/log2"
 	vender_api "github.com/temoto/vender/tele"
+
 	// mqtt1 "github.com/temoto/vender/tele/mqtt"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
 	tele_config "github.com/temoto/venderctl/internal/tele/config"
 )
 
 const defaultSendTimeout = 30 * time.Second
-const defaultNetworkTimeout = 3 * time.Second
 
 type tele struct { //nolint:maligned
 	sync.RWMutex
@@ -40,8 +41,18 @@ type tele struct { //nolint:maligned
 	// 	Close() error
 	// 	Publish(context.Context, *packet.Message) error
 	// }
-	secrets Secrets
+	// secrets Secrets
+	clientId        string
+	clientPasword   string
+	clientSubscribe string
+
+	// Vmc map[int32]vmcStruct
 }
+
+// type vmcStruct struct {
+// 	Connect bool
+// 	State   vender_api.State
+// }
 
 func NewTele() tele_api.Teler { return &tele{} }
 
@@ -51,12 +62,32 @@ func (self *tele) Init(ctx context.Context, log *log2.Log, teleConfig tele_confi
 
 	self.alive = alive.NewAlive()
 	self.conf = teleConfig
+	// fix AlexM move this to config
+	switch self.conf.Mode {
+	case tele_config.ModeDisabled: // disabled
+		panic(self.msgInvalidMode())
+	case tele_config.ModeCommand:
+		self.clientId = "command"
+		self.clientPasword = "commandpass"
+	case tele_config.ModeTax:
+		self.clientId = "tax"
+		self.clientPasword = "taxpass"
+	case tele_config.ModeSponge:
+		self.clientId = "ctl"
+		self.clientPasword = "ctlpass"
+	case tele_config.ModeTelegram:
+		self.clientId = "telegram"
+		self.clientPasword = "telegrampass"
+	default:
+		panic(self.msgInvalidMode())
+	}
+	self.clientSubscribe = "+/#"
 	self.log = log.Clone(log2.LInfo)
 	if self.conf.LogDebug {
 		self.log.SetLevel(log2.LDebug)
 	}
 	self.pch = make(chan tele_api.Packet, 1)
-
+	// self.Vmc = make(map[int32]vmcStruct)
 	err := self.mqttInit(ctx, log)
 	return errors.Annotate(err, "tele.Init")
 }

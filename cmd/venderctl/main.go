@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+
 	// "net"
 	// "net/http"
 	// _ "net/http/pprof" //#nosec G108
@@ -15,13 +16,16 @@ import (
 	cmd_sponge "github.com/temoto/venderctl/cmd/venderctl/sponge"
 	cmd_tax "github.com/temoto/venderctl/cmd/venderctl/tax"
 	cmd_tele "github.com/temoto/venderctl/cmd/venderctl/tele"
+	cmd_telegram "github.com/temoto/venderctl/cmd/venderctl/telegram"
+
 	// "github.com/temoto/venderctl/internal/state"
-	state_new "github.com/temoto/venderctl/internal/state/new"
-	"github.com/temoto/venderctl/internal/tele"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+
+	state_new "github.com/temoto/venderctl/internal/state/new"
+	"github.com/temoto/venderctl/internal/tele"
 )
 
 var log = log2.NewStderr(log2.LDebug)
@@ -31,6 +35,7 @@ var commands = []cli.Cmd{
 	cmd_tax.Cmd,
 	cmd_tele.Cmd,
 	cmd_sponge.Cmd,
+	cmd_telegram.Cmd,
 	{Name: "version", Action: versionMain},
 }
 
