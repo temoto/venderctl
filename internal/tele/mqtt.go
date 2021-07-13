@@ -7,16 +7,17 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/juju/errors"
 	"github.com/temoto/vender/helpers"
 	"github.com/temoto/vender/log2"
+
 	// vender_api "github.com/temoto/vender/tele"
 	// mqttl "github.com/temoto/vender/tele/mqtt"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
-	tele_config "github.com/temoto/venderctl/internal/tele/config"
 	"gopkg.in/hlandau/passlib.v1"
 )
 
@@ -44,33 +45,9 @@ func (self *tele) mqttInit(ctx context.Context, log *log2.Log) error {
 	mqtt.ERROR = log
 	mqtt.CRITICAL = log
 	mqtt.WARN = log
-	var mqttClientId, mqttClientPass string
-
 	self.mopt = mqtt.NewClientOptions()
-	// FIXME move this to config
-	switch self.conf.Mode {
-	case tele_config.ModeDisabled: // disabled
-		return nil
-	case tele_config.ModeCommand:
-		self.mopt.SetOnConnectHandler(self.onConnectHandlerCommand)
-		mqttClientId = "command"
-		mqttClientPass = "commandpass"
-	case tele_config.ModeTax:
-		self.mopt.SetBinaryWill("tax/c", []byte{0x00}, 1, true)
-		self.mopt.SetOnConnectHandler(self.onConnectHandlerTax)
-		mqttClientId = "tax"
-		mqttClientPass = "taxpass"
-	case tele_config.ModeSponge:
-		self.mopt.SetBinaryWill("sponge/c", []byte{0x00}, 1, true)
-		self.mopt.SetOnConnectHandler(self.onConnectHandlerSponge)
-		mqttClientId = "ctl"
-		mqttClientPass = "ctlpass"
-	default:
-		panic(self.msgInvalidMode())
-	}
-
 	credFun := func() (string, string) {
-		return mqttClientId, mqttClientPass
+		return self.clientId, self.clientPasword
 	}
 
 	self.mopt.
@@ -79,7 +56,7 @@ func (self *tele) mqttInit(ctx context.Context, log *log2.Log) error {
 		// SetTLSConfig(tlsconf).
 		// SetStore(mqtt.NewFileStore(storePath)).
 		SetCleanSession(false).
-		SetClientID(mqttClientId).
+		SetClientID(self.clientId).
 		SetCredentialsProvider(credFun).
 		SetDefaultPublishHandler(self.messageHandler).
 		SetKeepAlive(keepAlive).
@@ -88,7 +65,9 @@ func (self *tele) mqttInit(ctx context.Context, log *log2.Log) error {
 		SetResumeSubs(true).SetCleanSession(false).
 		SetConnectRetryInterval(retryInterval).
 		SetConnectionLostHandler(self.connectLostHandler).
-		SetConnectRetry(true)
+		SetConnectRetry(true).
+		SetOnConnectHandler(self.onConnectHandler).
+		SetBinaryWill(self.clientId+"/c", []byte{0x00}, 1, true)
 
 	self.m = mqtt.NewClient(self.mopt)
 
@@ -116,7 +95,8 @@ func (self *tele) messageHandler(c mqtt.Client, msg mqtt.Message) {
 		return
 
 	default:
-		errors.Annotatef(err, "msg=%v", msg)
+		// errors.Annotatef(err, "msg=%v", msg)
+		self.log.Debugf("msg=%v", msg)
 		return
 	}
 	select {
@@ -136,7 +116,7 @@ func parseTopic(msg mqtt.Message) (tele_api.Packet, error) {
 
 	p := tele_api.Packet{Payload: msg.Payload()}
 	if x, err := strconv.ParseInt(parts[1], 10, 32); err != nil {
-		return p, errors.Annotatef(err, "invalid topic=%s parts=%q", msg.Topic, parts)
+		return p, errors.Annotatef(err, "invalid topic=%s parts=%v", msg.Topic(), parts)
 	} else {
 		p.VmId = int32(x)
 	}
@@ -152,36 +132,21 @@ func parseTopic(msg mqtt.Message) (tele_api.Packet, error) {
 	case parts[3] == "1t":
 		p.Kind = tele_api.PacketTelemetry
 	default:
-		return p, errors.Errorf("invalid topic=%s parts=%q", msg.Topic, parts)
+		return p, errors.Errorf("invalid topic=%s parts=%q", msg.Topic(), parts)
 	}
 	return p, nil
 }
 
-func (self *tele) onConnectHandlerCommand(c mqtt.Client) {
-	if token := c.Subscribe("+/cr", 0, nil); token.Wait() && token.Error() != nil {
-		self.log.Errorf("commnad subscribe  error")
-	} else {
-		self.log.Debugf("Subscribe Ok")
-	}
-}
+func (t *tele) onConnectHandler(c mqtt.Client) {
+	if t.clientSubscribe != "" {
+		if token := c.Subscribe(t.clientSubscribe, 0, nil); token.Wait() && token.Error() != nil {
+			t.log.Errorf("%s subscribe error", t.clientId)
+		} else {
+			t.log.Debugf("%s subscribe Ok", t.clientId)
+			c.Publish(t.clientId+"/c", 1, true, []byte{0x01})
+		}
 
-func (self *tele) onConnectHandlerTax(c mqtt.Client) {
-	if token := c.Subscribe("+/#", 0, nil); token.Wait() && token.Error() != nil {
-		self.log.Errorf("tax connect subscribe error")
-	} else {
-		self.log.Infof("Subscribe (connect) Ok")
-		c.Publish("tax/c", 1, true, []byte{0x01})
 	}
-}
-
-func (self *tele) onConnectHandlerSponge(c mqtt.Client) {
-	if token := c.Subscribe("+/#", 1, nil); token.Wait() && token.Error() != nil {
-		self.log.Errorf("sponge subscribe error")
-	} else {
-		self.log.Debugf("Subscribe Ok")
-		c.Publish("sponge/c", 1, true, []byte{0x01})
-	}
-
 }
 
 func (self *tele) connectLostHandler(c mqtt.Client, err error) {

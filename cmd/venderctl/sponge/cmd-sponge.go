@@ -5,18 +5,22 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os/exec"
+	"strings"
+
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/go-pg/pg/v9"
 	pg_types "github.com/go-pg/pg/v9/types"
+
 	"github.com/golang/protobuf/proto"
+
 	"github.com/juju/errors"
 	"github.com/temoto/vender/helpers"
 	vender_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
-	"os/exec"
-	"strings"
+
 	// tele_config "github.com/temoto/venderctl/internal/tele/config"
 	"strconv"
 	// "github.com/temoto/venderctl/internal/tele"
@@ -58,9 +62,9 @@ func spongeMain(ctx context.Context, flags *flag.FlagSet) error {
 }
 
 // runtime irrelevant in Global
-type appSponge struct {
-	g *state.Global
-}
+// type appSponge struct {
+// 	g *state.Global
+// }
 
 func spongeInit(ctx context.Context) error {
 	g := state.GetGlobal(ctx)
@@ -121,9 +125,9 @@ func onPacket(ctx context.Context, p tele_api.Packet) error {
 		if p.Payload[0] == 1 {
 			c = true
 		}
-		r := g.Vmc[p.VmId]
-		r.Connect = c
-		g.Vmc[p.VmId] = r
+		// r := g.Vmc[p.VmId]
+		// r.Connect = c
+		// g.Vmc[p.VmId] = r
 		return onConnect(ctx, dbConn, p.VmId, c)
 
 	case tele_api.PacketState:
@@ -131,9 +135,9 @@ func onPacket(ctx context.Context, p tele_api.Packet) error {
 		if err != nil {
 			return err
 		}
-		r := g.Vmc[p.VmId]
-		r.State = s
-		g.Vmc[p.VmId] = r
+		// r := g.Vmc[p.VmId]
+		// r.State = s
+		// g.Vmc[p.VmId] = r
 		return onState(ctx, dbConn, p.VmId, s)
 
 	case tele_api.PacketTelemetry:

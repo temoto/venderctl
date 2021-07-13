@@ -104,6 +104,8 @@ github.com/temoto/ru-nalog-go v0.6.1-0.20200126230605-d6d5bfc79675/go.mod h1:dSD
 github.com/temoto/spq v0.10.0/go.mod h1:LbzRQb1nFUnE3OdI4mhjcRBrD7G0ZtIO2nqtgs0ZK2U=
 github.com/temoto/vender v0.210504.1-0.20210518055414-6b4f2dd436a8 h1:/J4Gi/0yMhRXJiacJPB98vqLFJLoXN218xmrhMzE1Zs=
 github.com/temoto/vender v0.210504.1-0.20210518055414-6b4f2dd436a8/go.mod h1:kKkcPgykMPrHqdUgcggYRGxriUP2xzZHYa7QqQHOGyw=
+github.com/temoto/vender v0.210504.1-0.20210704094029-968f6a03f7fe h1:UbqegLrF3Z4fpZ5jJaYi8uZvMZrgQGxsg94WMhUf9n4=
+github.com/temoto/vender v0.210504.1-0.20210704094029-968f6a03f7fe/go.mod h1:m6hFrltXMjJgHYBlu4JFDTEQjQm1Kr+soqcDllCFFhk=
 github.com/vmihailenco/tagparser v0.1.0 h1:u6yzKTY6gW/KxL/K2NTEQUOSXZipyGiIRarGjJKmQzU=
 github.com/vmihailenco/tagparser v0.1.0/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgqMEUPoW2WPyhdI=
 golang.org/x/crypto v0.0.0-20180910181607-0e37d006457b/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
@@ -147,6 +149,8 @@ golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8T
 google.golang.org/protobuf v1.26.0-rc.1/go.mod h1:jlhhOSvTdKEhbULTjvd4ARK9grFBp09yW+WbY/TyQbw=
 google.golang.org/protobuf v1.26.0 h1:bxAC2xTBsZGibn2RTntX0oH50xLsqy1OxA9tTL3p/lk=
 google.golang.org/protobuf v1.26.0/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
+google.golang.org/protobuf v1.27.1 h1:SnqbnDw1V7RiZcXPx5MEeqPv2s79L9i7BJUlG/+RurQ=
+google.golang.org/protobuf v1.27.1/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 h1:YR8cESwS4TdDjEe65xsg0ogRM/Nc3DYOhEAlW+xobZo=

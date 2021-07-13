@@ -71,7 +71,7 @@ func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 		cmd := &vender_api.Command{
 			Task: &vender_api.Command_Exec{Exec: &vender_api.Command_ArgExec{
 				Scenario: "",
-				Lock:     false,
+				// Lock:     false,
 			}},
 		}
 		_, err := g.Tele.CommandTx(targetId, cmd)
@@ -91,10 +91,12 @@ func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 
 	case "exec":
 		scenario := strings.Join(flags.Args()[argOffset+2:], " ")
+		// vat execId int := -
 		cmd := &vender_api.Command{
+			// Executer: 54321,
 			Task: &vender_api.Command_Exec{Exec: &vender_api.Command_ArgExec{
 				Scenario: scenario,
-				Lock:     true,
+				// Executer: 123,
 			}},
 		}
 		_, err := g.Tele.CommandTx(targetId, cmd)
@@ -123,8 +125,8 @@ func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 	case "qr":
 		qrText := flags.Arg(argOffset + 2)
 		cmd := &vender_api.Command{
-			Deadline: time.Now().Add(2 * time.Minute).UnixNano(),
-			Task:     &vender_api.Command_Show_QR{Show_QR: &vender_api.Command_ArgShowQR{QrText: qrText}},
+			// Deadline: time.Now().Add(2 * time.Minute).UnixNano(),
+			Task: &vender_api.Command_Show_QR{Show_QR: &vender_api.Command_ArgShowQR{QrText: qrText}},
 		}
 		_, err := g.Tele.CommandTx(targetId, cmd)
 		return err
