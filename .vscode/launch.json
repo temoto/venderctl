@@ -10,9 +10,9 @@
             "mode": "auto",
             "program": "${workspaceFolder}/cmd/venderctl/main.go",
             "buildFlags": "-ldflags='-X main.version=${env:app_ver}'",
-            // "args": ["-config","/home/alexm/dev.hcl","control","-1","exec","sleep(5s)"]
+            "args": ["-config","/home/alexm/dev.hcl","control","-1","exec","sleep(5s)"]
 
-            "args": ["-config","/home/alexm/dev.hcl","telegram"]
+            // "args": ["-config","/home/alexm/dev.hcl","telegram"]
             // "args": ["-config","/home/alexm/dev.hcl","tax"]
         },
     ]
