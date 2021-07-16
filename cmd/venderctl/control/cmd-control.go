@@ -7,7 +7,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
+
+	// "time"
 
 	"github.com/juju/errors"
 	vender_api "github.com/temoto/vender/tele"
@@ -96,31 +97,31 @@ func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 			Executer: 54321,
 			Task: &vender_api.Command_Exec{Exec: &vender_api.Command_ArgExec{
 				Scenario: scenario,
-				// Executer: 123,
+				Lock:     true,
 			}},
 		}
 		_, err := g.Tele.CommandTx(targetId, cmd)
 		return err
 
-	case "lock":
-		durationString := flags.Arg(argOffset + 2)
-		duration, err := time.ParseDuration(durationString)
-		if err != nil {
-			return errors.Annotatef(err, "invalid lock duration=%s", durationString)
-		}
-		if duration < time.Second {
-			return errors.Annotatef(err, "invalid lock duration=%v must be >= 1s", duration)
-		}
-		sec := int32(duration / time.Second)
-		if time.Duration(sec)*time.Second != duration {
-			sec++
-		}
-		g.Log.Infof("duration=%v rounded up to %d seconds", duration, sec)
-		cmd := &vender_api.Command{
-			Task: &vender_api.Command_Lock{Lock: &vender_api.Command_ArgLock{Duration: sec}},
-		}
-		_, err = g.Tele.CommandTx(targetId, cmd)
-		return err
+	// case "lock":
+	// 	durationString := flags.Arg(argOffset + 2)
+	// 	duration, err := time.ParseDuration(durationString)
+	// 	if err != nil {
+	// 		return errors.Annotatef(err, "invalid lock duration=%s", durationString)
+	// 	}
+	// 	if duration < time.Second {
+	// 		return errors.Annotatef(err, "invalid lock duration=%v must be >= 1s", duration)
+	// 	}
+	// 	sec := int32(duration / time.Second)
+	// 	if time.Duration(sec)*time.Second != duration {
+	// 		sec++
+	// 	}
+	// 	g.Log.Infof("duration=%v rounded up to %d seconds", duration, sec)
+	// 	cmd := &vender_api.Command{
+	// 		Task: &vender_api.Command_Lock{Lock: &vender_api.Command_ArgLock{Duration: sec}},
+	// 	}
+	// 	_, err = g.Tele.CommandTx(targetId, cmd)
+	// 	return err
 
 	case "qr":
 		qrText := flags.Arg(argOffset + 2)

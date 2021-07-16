@@ -144,14 +144,15 @@ func (self *tele) CommandTx(vmid int32, c *vender_api.Command) (*vender_api.Resp
 		case p := <-self.pch:
 			// if p.Kind == tele.PacketCommandReply {
 			if r, err := p.CommandResponse(); err == nil {
-				if r.CommandId == c.Id {
-					if r.Error == "" {
-						return r, nil
-					}
-					return r, fmt.Errorf(r.Error)
-				} else {
-					self.log.Errorf("current command.id=%d unexpected response=%#v", c.Id, r)
-				}
+				// if r.CommandId == c.Id {
+				// 	if r.Error == "" {
+				// 		return r, nil
+				// 	}
+				// 	return r, fmt.Errorf(r.Error)
+				// } else {
+				// self.log.Errorf("current command.id=%d unexpected response=%#v", c.Id, r)
+				self.log.Errorf("current command unexpected response=%#v", r)
+				// }
 			} else {
 				self.log.Errorf("unexpected packet=%#v", p)
 			}
