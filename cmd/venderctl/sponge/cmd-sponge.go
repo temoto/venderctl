@@ -92,7 +92,7 @@ func spongeLoop(ctx context.Context) error {
 	for {
 		select {
 		case p := <-ch:
-			g.Log.Debugf("tele packet=%s", p.String())
+			g.Log.Debugf("sponge packet=%s", p.String())
 
 			g.Alive.Add(1)
 			err := onPacket(ctx, p)

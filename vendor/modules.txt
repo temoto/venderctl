@@ -20,6 +20,9 @@ github.com/go-pg/urlstruct
 github.com/go-pg/urlstruct/internal
 # github.com/go-pg/zerochecker v0.1.1
 github.com/go-pg/zerochecker
+# github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.0.0-rc1
+## explicit
+github.com/go-telegram-bot-api/telegram-bot-api/v5
 # github.com/golang/protobuf v1.5.2
 ## explicit
 github.com/golang/protobuf/proto
@@ -47,6 +50,8 @@ github.com/pmezard/go-difflib/difflib
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
+# github.com/technoweenie/multipartstreamer v1.0.1
+github.com/technoweenie/multipartstreamer
 # github.com/temoto/alive/v2 v2.0.0
 ## explicit
 github.com/temoto/alive/v2

@@ -21,7 +21,7 @@ import (
 	"gopkg.in/hlandau/passlib.v1"
 )
 
-const SecretsStale = 5 * time.Second
+// const SecretsStale = 5 * time.Second
 
 func (self *tele) mqttInit(ctx context.Context, log *log2.Log) error {
 	mlog := log.Clone(log2.LInfo)
@@ -83,7 +83,7 @@ func (self *tele) mqttInit(ctx context.Context, log *log2.Log) error {
 }
 
 func (self *tele) messageHandler(c mqtt.Client, msg mqtt.Message) {
-	self.log.Debugf("income message: (%s %x) ", msg.Topic(), msg.Payload())
+	// self.log.Debugf("income message: (%s %x) ", msg.Topic(), msg.Payload())
 	p, err := parseTopic(msg)
 	switch err {
 	case nil:

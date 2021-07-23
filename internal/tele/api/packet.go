@@ -8,7 +8,7 @@ import (
 	vender_api "github.com/temoto/vender/tele"
 )
 
-//go:generate stringer -type=PacketKind -trimprefix=Packet
+//go:generate go run golang.org/x/tools/cmd/stringer -type=PacketKind -trimprefix=Packet
 type PacketKind uint8
 
 const (
@@ -18,6 +18,8 @@ const (
 	PacketTelemetry
 	PacketCommand
 	PacketCommandReply
+	PacketCommandAccepted
+	PacketCommandDone
 )
 
 type Packet struct {
