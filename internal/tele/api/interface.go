@@ -14,6 +14,7 @@ type Teler interface {
 	Addrs() []string
 	Chan() <-chan Packet
 	CommandTx(vmid int32, c *vender_api.Command) (*vender_api.Response, error)
+	SendCommand(vmid int32, c *vender_api.Command) error
 }
 
 type stub struct{}
@@ -31,3 +32,4 @@ func (stub) Chan() <-chan Packet { return nil }
 func (stub) CommandTx(vmid int32, c *vender_api.Command) (*vender_api.Response, error) {
 	return nil, nil
 }
+func (stub) SendCommand(vmid int32, c *vender_api.Command) error { return nil }

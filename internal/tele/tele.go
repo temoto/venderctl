@@ -45,14 +45,7 @@ type tele struct { //nolint:maligned
 	clientId        string
 	clientPasword   string
 	clientSubscribe string
-
-	// Vmc map[int32]vmcStruct
 }
-
-// type vmcStruct struct {
-// 	Connect bool
-// 	State   vender_api.State
-// }
 
 func NewTele() tele_api.Teler { return &tele{} }
 

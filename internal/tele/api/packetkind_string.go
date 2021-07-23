@@ -14,11 +14,13 @@ func _() {
 	_ = x[PacketTelemetry-3]
 	_ = x[PacketCommand-4]
 	_ = x[PacketCommandReply-5]
+	_ = x[PacketCommandAccepted-6]
+	_ = x[PacketCommandDone-7]
 }
 
-const _PacketKind_name = "InvalidStateTelemetryCommandCommandReply"
+const _PacketKind_name = "InvalidConnectStateTelemetryCommandCommandReplyCommandAcceptedCommandDone"
 
-var _PacketKind_index = [...]uint8{0, 7, 12, 21, 28, 40}
+var _PacketKind_index = [...]uint8{0, 7, 14, 19, 28, 35, 47, 62, 73}
 
 func (i PacketKind) String() string {
 	if i >= PacketKind(len(_PacketKind_index)-1) {

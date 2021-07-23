@@ -5,9 +5,11 @@ import (
 	"flag"
 	"fmt"
 
-	// "net"
-	// "net/http"
-	// _ "net/http/pprof" //#nosec G108
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+
 	"github.com/juju/errors"
 	"github.com/temoto/vender/log2"
 	"github.com/temoto/venderctl/cmd/internal/cli"
@@ -17,12 +19,7 @@ import (
 	cmd_tax "github.com/temoto/venderctl/cmd/venderctl/tax"
 	cmd_tele "github.com/temoto/venderctl/cmd/venderctl/tele"
 	cmd_telegram "github.com/temoto/venderctl/cmd/venderctl/telegram"
-
-	// "github.com/temoto/venderctl/internal/state"
-	"os"
-	"os/signal"
-	"strings"
-	"syscall"
+	_ "golang.org/x/tools/cmd/stringer"
 
 	state_new "github.com/temoto/venderctl/internal/state/new"
 	"github.com/temoto/venderctl/internal/tele"
