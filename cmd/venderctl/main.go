@@ -19,7 +19,8 @@ import (
 	cmd_tax "github.com/temoto/venderctl/cmd/venderctl/tax"
 	cmd_tele "github.com/temoto/venderctl/cmd/venderctl/tele"
 	cmd_telegram "github.com/temoto/venderctl/cmd/venderctl/telegram"
-	_ "golang.org/x/tools/cmd/stringer"
+
+	// _ "golang.org/x/tools/cmd/stringer"
 
 	state_new "github.com/temoto/venderctl/internal/state/new"
 	"github.com/temoto/venderctl/internal/tele"

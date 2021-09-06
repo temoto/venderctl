@@ -4,9 +4,19 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
+	"os"
+
+	// "log"
+	// "os"
 
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/go-pg/pg/v9"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
 	"github.com/juju/errors"
+	vender_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
@@ -20,71 +30,140 @@ var Cmd = cli.Cmd{
 	Action: telegramMain,
 }
 
+// var tg *tgbotapi.BotAPI
+var tb = new(tgbotapiot)
+
+type tgbotapiot struct {
+	bot *tgbotapi.BotAPI
+	// updateConfig tgbotapi.UpdateConfig
+	g      *state.Global
+	chatId map[int64]client
+}
+
+type client struct {
+	Id      uint32
+	Balance int32
+	Credit  uint32
+	// tgId    int64
+	// chatID  int64
+	// rcook   cookSrruct
+}
+
+type cookSrruct struct {
+	price uint32
+	code  string
+	sugar uint8
+	cream uint8
+}
+
+// type tgRemoteMakeStruct struct {
+// 	rvmid int32
+// 	rcode string
+// }
+
 func telegramMain(ctx context.Context, flags *flag.FlagSet) error {
+
 	g := state.GetGlobal(ctx)
 	g.InitVMC()
 	configPath := flags.Lookup("config").Value.String()
 	g.Config = state.MustReadConfig(g.Log, state.NewOsFullReader(), configPath)
 	g.Config.Tele.SetMode("telegram")
-	// g.Vmc = make(map[int32]bool)
-	// g.Vmc[1] = true
 
 	if err := telegramInit(ctx); err != nil {
 		return errors.Annotate(err, "telegramInit")
 	}
-	// return telegramLoop(ctx)
-	return nil
+	return tb.telegramLoop()
 
 }
 
 func telegramInit(ctx context.Context) error {
-	g := state.GetGlobal(ctx)
-	// if err := g.InitDB(CmdName); err != nil {
-	// 	return errors.Annotate(err, "db init")
-	// }
-
-	if err := g.Tele.Init(ctx, g.Log, g.Config.Tele); err != nil {
-		return errors.Annotate(err, "Tele.Init")
+	var err error
+	tb.g = state.GetGlobal(ctx)
+	if err = tb.g.InitDB(CmdName); err != nil {
+		return errors.Annotate(err, "telegramm_db_init")
 	}
 
-	// if err := g.Telegram.Init(ctx, g.Log, g.Config.Tele); err != nil {
-	// 	return errors.Annotate(err, "Telegram.Init")
-	// }
+	if err = tb.g.Tele.Init(ctx, tb.g.Log, tb.g.Config.Tele); err != nil {
+		return errors.Annotate(err, "MQTT.Init")
+	}
+
+	if tb.bot, err = tgbotapi.NewBotAPI("1779990832:AAGmI_ir7EMjkCoF_xelX6z_F-G4NzdKy6w"); err != nil {
+		log.Fatalf("Bot connect fail :%s ", err)
+		os.Exit(1)
+	}
+
+	// tb.bot.Debug = true
+	tb.chatId = make(map[int64]client)
+
+	// log.Printf("Authorized on account '%s'", tb.bot.Self.UserName)
 
 	cli.SdNotify(daemon.SdNotifyReady)
-	g.Log.Debugf("telegram init complete")
-	return telegramLoop(ctx)
+	tb.g.Log.Infof("telegram init complete")
+	return tb.telegramLoop()
 
 }
 
-func telegramLoop(ctx context.Context) error {
-	g := state.GetGlobal(ctx)
-	ch := g.Tele.Chan()
-	stopch := g.Alive.StopChan()
+func (tb *tgbotapiot) telegramLoop() error {
+	mqttch := tb.g.Tele.Chan()
+	stopch := tb.g.Alive.StopChan()
+	// tb.updateConfig = tgbotapi.NewUpdate(0)
+	// tb.updateConfig.Timeout = 60
+
+	// tgch := tb.bot.GetUpdatesChan(tb.updateConfig)
 
 	for {
 		select {
-		case p := <-ch:
-			g.Log.Debugf("tele packet=%s", p.String())
-
-			g.Alive.Add(1)
-			err := onPacket(ctx, p)
-			g.Alive.Done()
+		case p := <-mqttch:
+			tb.g.Alive.Add(1)
+			err := tb.onMqtt(p)
+			tb.g.Alive.Done()
 			if err != nil {
-				g.Log.Error(errors.ErrorStack(err))
+				tb.g.Log.Error(errors.ErrorStack(err))
 			}
 
+		// case tgm := <-tgch:
+		// 	if tgm.Message == nil {
+		// 		break
+		// 	}
+		// 	err := tb.onTeleBot(tgm)
+		// 	if err != nil {
+		// 		tb.g.Log.Error(errors.ErrorStack(err))
+		// 	}
 		case <-stopch:
 			return nil
 		}
 	}
-
 }
 
-func onPacket(ctx context.Context, p tele_api.Packet) error {
-	g := state.GetGlobal(ctx)
+// func (tb *tgbotapiot) onTeleBot(m tgbotapi.Update) error {
+// 	cl, err := tb.getClient(m.Message.From.ID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	//parse command
+// 	cl.rcook.code = "10"
+// 	tb.chatId[m.Message.Chat.ID] = cl
+
+// 	cl.sendCookCmd()
+// 	return nil
+// }
+
+func (c *client) sendCookCmd() error {
+	cmd := &vender_api.Command{
+		Executer: 0,
+		Lock:     false,
+		Task: &vender_api.Command_Cook{
+			Cook: &vender_api.Command_ArgCook{
+				Menucode: "10",
+			}},
+	}
+	fmt.Printf("\n\033[41m senddcook(%v) \033[0m\n\n", cmd)
+	return nil
+}
+
+func (tb *tgbotapiot) onMqtt(p tele_api.Packet) error {
 	vmcid := p.VmId
-	r := g.Vmc[vmcid]
+	r := tb.g.Vmc[vmcid]
 	switch p.Kind {
 	case tele_api.PacketConnect:
 		c := false
@@ -99,16 +178,112 @@ func onPacket(ctx context.Context, p tele_api.Packet) error {
 			return err
 		}
 		r.State = s
+	case tele_api.PacketCommandReply:
+		// rm, err := p.CommandResponse()
+		// if err != nil {
+		// 	g.Log.Errorf("tele command parse raw=%x err=%v", p.Payload, err)
+		// }
+		// return tgResponseMessage(ctx, 0, *rm)
+		return nil
 
 	default:
-		return errors.Errorf("code error invalid packet=%v", p)
+		// return errors.Errorf("code error invalid packet=%s", p)
+		return nil
 	}
-	g.Vmc[vmcid] = r
-	fmt.Printf("\n\033[41m (%v) \033[0m\n\n", g.Vmc)
+	// g.Vmc[vmcid] = r
 	return nil
 }
 
-// func onConnect(ctx context.Context, vmid int32, connect bool) error {
+func (tb *tgbotapiot) getClient(c int64) (client, error) {
+	tb.g.Alive.Add(1)
+	db := tb.g.DB.Conn()
+	var cl client
+	_, err := db.QueryOne(&cl, `SELECT id, balance,	credit FROM vmc_user WHERE idtelegram = ?`, c)
+	_ = db.Close()
+	tb.g.Alive.Done()
+	if err == pg.ErrNoRows {
+		return cl, errors.Annotate(err, "client not found in db")
+	} else if err != nil {
+		return cl, errors.Annotate(err, "telegram client db read error")
+	}
+	return cl, nil
+}
+
+// func tgResponseMessage(ctx context.Context, vmc int32, m vender_api.Response) error {
+// 	msg := tgbotapi.NewMessage(t.chatID, t.replayMessage)
+// 	msg.ReplyToMessageID = t.replayMessageID
+// 	m, err := tb.bot.Send(msg)
+// 	// return m.Date, err
+
+// 	return err
+// }
+
+// func chatWork(ctx context.Context, t tgTaskStruct) {
+// 	defer delete(tb.chatId, t.chatID)
 // 	g := state.GetGlobal(ctx)
-// 	return nil
+// 	t.replayMessage = "не понял"
+
+// 	switch t.command {
+// 	case "info":
+// 		t.replayMessage = fmt.Sprintf("баланс = %d у.е.", t.Credit)
+// 	case "new":
+// 		t.replayMessage = "пока не умею. надо просить хозяина. что бы добавил."
+// 	}
+
+// 	// команда '/r1_12'  робот 1 сделать код 12
+// 	reCmdMake := regexp.MustCompile(`^r(-?\d+)_(\d+)$`)
+// 	parts := reCmdMake.FindStringSubmatch(t.command)
+// 	if len(parts) == 3 {
+// 		var remMake tgRemoteMakeStruct
+// 		i, err := strconv.ParseInt(parts[1], 10, 32)
+// 		remMake.rvmid = int32(i)
+// 		if err != nil {
+// 			g.Log.Errorf("telegramm remore parse vmID")
+// 		}
+// 		remMake.rcode = parts[2]
+// 		t.replayMessage = remoteMake(ctx, t, remMake)
+// 	}
+// 	dt, err := tgSend(t)
+// 	if err != nil {
+// 		g.Log.Errorf("telegram send message error (%v)", err)
+// 	}
+// 	g.Log.Infof("complete task time:%s task:(%v)", time.Unix(int64(dt), 0), t)
+// }
+
+// func remoteMake(ctx context.Context, t tgTaskStruct, r tgRemoteMakeStruct) string {
+// 	g := state.GetGlobal(ctx)
+// 	if !g.Vmc[r.rvmid].Connect {
+// 		return "Автомат не подключен к сети"
+// 	}
+// 	// if g.Vmc[r.rvmid].State != tele.State_Nominal {
+// 	// 	return "Автомат занят."
+// 	// }
+
+// 	cmd := &vender_api.Command{
+// 		Executer: t.Id,
+// 		Task: &vender_api.Command_Exec{Exec: &vender_api.Command_ArgExec{
+// 			Scenario: "menu." + r.rcode,
+// 			Lock:     true,
+// 		}},
+// 	}
+// 	// save task to database
+// 	// a, err := g.Tele.CommandTx(r.rvmid, cmd)
+// 	// mqttch1 := g.Tele.Chan()
+// err := g.Tele.SendCommand(r.rvmid, cmd)
+// 	fmt.Printf("\n\033[41m err(%v) \033[0m\n\n", err)
+
+// 	// pp := <-mqttch1
+// 	// fmt.Printf("\n\033[41m REM(%v) \033[0m\n\n", pp)
+
+// 	// tmr := time.NewTimer(5 * time.Second)
+// 	// defer tmr.Stop()
+
+// 	return ""
+// }
+
+// func tgSend(t tgTaskStruct) (int, error) {
+// 	msg := tgbotapi.NewMessage(t.chatID, t.replayMessage)
+// 	msg.ReplyToMessageID = t.replayMessageID
+// 	m, err := tb.bot.Send(msg)
+// 	return m.Date, err
 // }

@@ -94,10 +94,11 @@ func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 		scenario := strings.Join(flags.Args()[argOffset+2:], " ")
 		// vat execId int := -
 		cmd := &vender_api.Command{
-			Executer: 54321,
+			Executer:   54321,
+			Lock:       false,
+			SendStatus: false,
 			Task: &vender_api.Command_Exec{Exec: &vender_api.Command_ArgExec{
 				Scenario: scenario,
-				Lock:     true,
 			}},
 		}
 		_, err := g.Tele.CommandTx(targetId, cmd)
