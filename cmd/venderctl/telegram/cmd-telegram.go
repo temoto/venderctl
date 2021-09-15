@@ -69,6 +69,8 @@ func telegramMain(ctx context.Context, flags *flag.FlagSet) error {
 	configPath := flags.Lookup("config").Value.String()
 	g.Config = state.MustReadConfig(g.Log, state.NewOsFullReader(), configPath)
 	g.Config.Tele.SetMode("telegram")
+	// g.Vmc = make(map[int32]bool)
+	// g.Vmc[1] = true
 
 	if err := telegramInit(ctx); err != nil {
 		return errors.Annotate(err, "telegramInit")
