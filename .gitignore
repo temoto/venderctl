@@ -32,3 +32,4 @@ coverage.txt
 tmp-venderctl-db/
 venderctl-local.hcl
 venderctl.sublime-*
+cmd/venderctl/__debug_bin

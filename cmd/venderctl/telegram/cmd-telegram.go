@@ -34,19 +34,20 @@ var Cmd = cli.Cmd{
 var tb = new(tgbotapiot)
 
 type tgbotapiot struct {
-	bot *tgbotapi.BotAPI
-	// updateConfig tgbotapi.UpdateConfig
-	g      *state.Global
-	chatId map[int64]client
+	bot          *tgbotapi.BotAPI
+	updateConfig tgbotapi.UpdateConfig
+	g            *state.Global
+	chatId       map[int64]client
 }
 
 type client struct {
 	Id      uint32
 	Balance int32
 	Credit  uint32
-	// tgId    int64
-	// chatID  int64
-	// rcook   cookSrruct
+	tgId    int64
+	chatID  int64
+	vmid    int32
+	rcook   cookSrruct
 }
 
 type cookSrruct struct {
@@ -92,7 +93,7 @@ func telegramInit(ctx context.Context) error {
 		os.Exit(1)
 	}
 
-	// tb.bot.Debug = true
+	tb.bot.Debug = true
 	tb.chatId = make(map[int64]client)
 
 	// log.Printf("Authorized on account '%s'", tb.bot.Self.UserName)
@@ -106,10 +107,10 @@ func telegramInit(ctx context.Context) error {
 func (tb *tgbotapiot) telegramLoop() error {
 	mqttch := tb.g.Tele.Chan()
 	stopch := tb.g.Alive.StopChan()
-	// tb.updateConfig = tgbotapi.NewUpdate(0)
-	// tb.updateConfig.Timeout = 60
+	tb.updateConfig = tgbotapi.NewUpdate(0)
+	tb.updateConfig.Timeout = 60
 
-	// tgch := tb.bot.GetUpdatesChan(tb.updateConfig)
+	tgch := tb.bot.GetUpdatesChan(tb.updateConfig)
 
 	for {
 		select {
@@ -121,44 +122,48 @@ func (tb *tgbotapiot) telegramLoop() error {
 				tb.g.Log.Error(errors.ErrorStack(err))
 			}
 
-		// case tgm := <-tgch:
-		// 	if tgm.Message == nil {
-		// 		break
-		// 	}
-		// 	err := tb.onTeleBot(tgm)
-		// 	if err != nil {
-		// 		tb.g.Log.Error(errors.ErrorStack(err))
-		// 	}
+		case tgm := <-tgch:
+			if tgm.Message == nil {
+				break
+			}
+			err := tb.onTeleBot(tgm)
+			if err != nil {
+				tb.g.Log.Error(errors.ErrorStack(err))
+			}
 		case <-stopch:
 			return nil
 		}
 	}
 }
 
-// func (tb *tgbotapiot) onTeleBot(m tgbotapi.Update) error {
-// 	cl, err := tb.getClient(m.Message.From.ID)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	//parse command
-// 	cl.rcook.code = "10"
-// 	tb.chatId[m.Message.Chat.ID] = cl
+func (tb *tgbotapiot) onTeleBot(m tgbotapi.Update) error {
+	cl, err := tb.getClient(m.Message.From.ID)
+	if err != nil {
+		return err
+	}
+	//parse command
+	cl.rcook.code = "10"
+	cl.vmid = 88
+	cl.rcook.cream = 4
+	cl.rcook.sugar = 4
+	tb.chatId[m.Message.Chat.ID] = cl
 
-// 	cl.sendCookCmd()
-// 	return nil
-// }
+	return tb.sendCookCmd(m.Message.Chat.ID)
+}
 
-func (c *client) sendCookCmd() error {
+func (tb *tgbotapiot) sendCookCmd(chatId int64) error {
+	client := tb.chatId[chatId]
 	cmd := &vender_api.Command{
-		Executer: 0,
-		Lock:     false,
+		Executer: client.Id,
 		Task: &vender_api.Command_Cook{
 			Cook: &vender_api.Command_ArgCook{
-				Menucode: "10",
+				Menucode: client.rcook.code,
+				Cream:    []byte{client.rcook.cream},
+				Sugar:    []byte{client.rcook.sugar},
 			}},
 	}
 	fmt.Printf("\n\033[41m senddcook(%v) \033[0m\n\n", cmd)
-	return nil
+	return tb.g.Tele.SendCommand(client.vmid, cmd)
 }
 
 func (tb *tgbotapiot) onMqtt(p tele_api.Packet) error {
