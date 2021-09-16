@@ -90,7 +90,7 @@ func telegramInit(ctx context.Context) error {
 		return errors.Annotate(err, "MQTT.Init")
 	}
 
-	if tb.bot, err = tgbotapi.NewBotAPI("1779990832:AAGmI_ir7EMjkCoF_xelX6z_F-G4NzdKy6w"); err != nil {
+	if tb.bot, err = tgbotapi.NewBotAPI(tb.g.Config.Telegram.TelegrammBotApi); err != nil {
 		log.Fatalf("Bot connect fail :%s ", err)
 		os.Exit(1)
 	}

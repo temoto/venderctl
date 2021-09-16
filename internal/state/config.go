@@ -40,6 +40,9 @@ type Config struct {
 			}
 		}
 	}
+	Telegram struct {
+		TelegrammBotApi string `hcl:"telegram_bot_api"`
+	}
 	Tele tele_config.Config
 
 	_copy_guard sync.Mutex //nolint:unused
