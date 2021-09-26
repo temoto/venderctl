@@ -1,4 +1,4 @@
-package telegram
+package telegramm
 
 import (
 	"context"
@@ -204,6 +204,8 @@ func (tb *tgbotapiot) onMqtt(p tele_api.Packet) error {
 func (tb *tgbotapiot) cookResponse(rm *vender_api.Response) {
 	var msg string
 	switch rm.CookReplay {
+	case vender_api.CookReplay_vmcbusy:
+		msg = "автомат в данный момент обрабатывает дургой заказ. попробуйте позднее."
 	case vender_api.CookReplay_cookStart:
 		msg = "начинаю готовить"
 	case vender_api.CookReplay_cookFinish:
