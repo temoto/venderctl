@@ -3,6 +3,7 @@ module github.com/temoto/venderctl
 go 1.17
 
 require (
+	github.com/AlexTransit/vender v0.210925.9-0.20210926052830-0483022f3a25
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f
 	github.com/eclipse/paho.mqtt.golang v1.3.5
 	github.com/go-pg/pg/v9 v9.0.3
@@ -13,7 +14,6 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/temoto/alive/v2 v2.0.0
 	github.com/temoto/ru-nalog-go v0.6.1-0.20200126230605-d6d5bfc79675
-	github.com/temoto/vender v0.210504.1-0.20210704094029-968f6a03f7fe
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	gopkg.in/hlandau/easymetric.v1 v1.0.0 // indirect
 	gopkg.in/hlandau/measurable.v1 v1.0.1 // indirect
@@ -34,5 +34,3 @@ require (
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 	mellium.im/sasl v0.2.1 // indirect
 )
-
-replace github.com/temoto/vender => /home/alexm/vender

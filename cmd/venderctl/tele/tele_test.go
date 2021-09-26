@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
+	vender_api "github.com/AlexTransit/vender/tele"
 	"github.com/go-pg/pg/v9"
 	"github.com/golang/protobuf/proto"
 	"github.com/juju/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	vender_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/internal/state"
 	state_new "github.com/temoto/venderctl/internal/state/new"
 )

@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/AlexTransit/vender/log2"
 	"github.com/temoto/alive/v2"
-	"github.com/temoto/vender/log2"
 	"github.com/temoto/venderctl/internal/state"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
 )

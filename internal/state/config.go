@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/AlexTransit/vender/currency"
+	"github.com/AlexTransit/vender/helpers"
+	"github.com/AlexTransit/vender/log2"
 	"github.com/hashicorp/hcl"
 	"github.com/juju/errors"
-	"github.com/temoto/vender/currency"
-	"github.com/temoto/vender/helpers"
-	"github.com/temoto/vender/log2"
 	tele_config "github.com/temoto/venderctl/internal/tele/config"
 )
 
@@ -41,7 +41,7 @@ type Config struct {
 		}
 	}
 	Telegram struct {
-		TelegrammBotApi string `hcl:"telegram_bot_api"`
+		TelegrammBotApi  string `hcl:"telegram_bot_api"`
 	}
 	Tele tele_config.Config
 

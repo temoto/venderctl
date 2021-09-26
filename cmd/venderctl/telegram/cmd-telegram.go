@@ -7,16 +7,11 @@ import (
 	"log"
 	"os"
 
-	// "log"
-	// "os"
-
+	vender_api "github.com/AlexTransit/vender/tele"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/go-pg/pg/v9"
-
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-
 	"github.com/juju/errors"
-	vender_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
@@ -44,7 +39,6 @@ type client struct {
 	Id      uint32
 	Balance int32
 	Credit  uint32
-	tgId    int64
 	chatID  int64
 	vmid    int32
 	rcook   cookSrruct
@@ -156,15 +150,14 @@ func (tb *tgbotapiot) onTeleBot(m tgbotapi.Update) error {
 func (tb *tgbotapiot) sendCookCmd(chatId int64) error {
 	client := tb.chatId[chatId]
 	cmd := &vender_api.Command{
-		Executer: client.Id,
-		Task: &vender_api.Command_Cook{
-			Cook: &vender_api.Command_ArgCook{
-				Menucode: client.rcook.code,
-				Cream:    []byte{client.rcook.cream},
-				Sugar:    []byte{client.rcook.sugar},
-			}},
+		Executer:             uint64(chatId),
+		Lock:                 false,
+		Task:                 &vender_api.Command_Cook{Cook: &vender_api.Command_ArgCook{Menucode: client.rcook.code, Cream: []byte{client.rcook.cream}, Sugar: []byte{client.rcook.sugar}}},
+		XXX_NoUnkeyedLiteral: struct{}{},
+		XXX_unrecognized:     []byte{},
+		XXX_sizecache:        0,
 	}
-	fmt.Printf("\n\033[41m senddcook(%v) \033[0m\n\n", cmd)
+	tb.g.Log.Infof("client id:%d send remoite cook code:%s", client.Id, client.rcook.code)
 	return tb.g.Tele.SendCommand(client.vmid, cmd)
 }
 
@@ -186,9 +179,16 @@ func (tb *tgbotapiot) onMqtt(p tele_api.Packet) error {
 		}
 		r.State = s
 	case tele_api.PacketCommandReply:
-		// rm, err := p.CommandResponse()
+		rm, err := p.CommandResponse()
+		cm := rm.CookReplay
+
+		if rm.CookReplay > 0 {
+			tb.cookResponse(rm)
+			tb.g.Log.Errorf("tele command parse rm%v aa(%v) err=%v", rm, cm, err)
+
+		}
+
 		// if err != nil {
-		// 	g.Log.Errorf("tele command parse raw=%x err=%v", p.Payload, err)
 		// }
 		// return tgResponseMessage(ctx, 0, *rm)
 		return nil
@@ -199,6 +199,32 @@ func (tb *tgbotapiot) onMqtt(p tele_api.Packet) error {
 	}
 	// g.Vmc[vmcid] = r
 	return nil
+}
+func (tb *tgbotapiot) cookResponse(rm *vender_api.Response) {
+	var msg string
+	switch rm.CookReplay {
+	case vender_api.CookReplay_cookStart:
+		msg = "начинаю готовить"
+	case vender_api.CookReplay_cookFinish:
+		msg = "заказ выполнен. приятного аппетита."
+	case vender_api.CookReplay_cookInaccessible:
+		msg = "код недоступен"
+	case vender_api.CookReplay_cookOverdraft:
+		msg = "недостаточно средств. поплните баланс и попробуйте снова."
+	case vender_api.CookReplay_cookError:
+	default:
+		msg = "что то пошло не так. без паники. хозяин уже в курсе."
+		tb.g.Log.Errorf("tele remote cooke rror. unknow response (%v)", rm.String())
+	}
+	tb.tgSend(int64(rm.Executer), msg)
+}
+
+func (tb *tgbotapiot) tgSend(chatid int64, s string) {
+	msg := tgbotapi.NewMessage(chatid, s)
+	// msg.ReplyToMessageID = t.replayMessageID
+	m, err := tb.bot.Send(msg)
+	fmt.Printf("\n\033[41m %v %v \033[0m\n\n", m, err)
+	// return m.Date, err
 }
 
 func (tb *tgbotapiot) getClient(c int64) (client, error) {
@@ -286,11 +312,4 @@ func (tb *tgbotapiot) getClient(c int64) (client, error) {
 // 	// defer tmr.Stop()
 
 // 	return ""
-// }
-
-// func tgSend(t tgTaskStruct) (int, error) {
-// 	msg := tgbotapi.NewMessage(t.chatID, t.replayMessage)
-// 	msg.ReplyToMessageID = t.replayMessageID
-// 	m, err := tb.bot.Send(msg)
-// 	return m.Date, err
 // }

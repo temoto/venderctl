@@ -10,13 +10,13 @@ import (
 
 	"time"
 
+	"github.com/AlexTransit/vender/helpers"
+	"github.com/AlexTransit/vender/log2"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/juju/errors"
-	"github.com/temoto/vender/helpers"
-	"github.com/temoto/vender/log2"
 
-	// vender_api "github.com/temoto/vender/tele"
-	// mqttl "github.com/temoto/vender/tele/mqtt"
+	// vender_api "github.com/AlexTransit/vender/tele"
+	// mqttl "github.com/AlexTransit/vender/tele/mqtt"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
 	"gopkg.in/hlandau/passlib.v1"
 )

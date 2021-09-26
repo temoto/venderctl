@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AlexTransit/vender/helpers"
+	vender_api "github.com/AlexTransit/vender/tele"
 	"github.com/go-pg/pg/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/temoto/ru-nalog-go/umka"
-	"github.com/temoto/vender/helpers"
-	vender_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/internal/state"
 	state_new "github.com/temoto/venderctl/internal/state/new"
 )

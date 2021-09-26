@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/AlexTransit/vender/log2"
 	"github.com/juju/errors"
 	"github.com/stretchr/testify/assert"
-	"github.com/temoto/vender/log2"
 	"github.com/temoto/venderctl/internal/state"
 	state_new "github.com/temoto/venderctl/internal/state/new"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"

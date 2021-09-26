@@ -3,8 +3,8 @@ package tele_api
 import (
 	"context"
 
-	"github.com/temoto/vender/log2"
-	vender_api "github.com/temoto/vender/tele"
+	"github.com/AlexTransit/vender/log2"
+	vender_api "github.com/AlexTransit/vender/tele"
 	tele_config "github.com/temoto/venderctl/internal/tele/config"
 )
 

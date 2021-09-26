@@ -7,12 +7,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/AlexTransit/vender/helpers"
+	"github.com/AlexTransit/vender/log2"
+	vender_api "github.com/AlexTransit/vender/tele"
 	"github.com/go-pg/pg/v9"
 	"github.com/juju/errors"
 	"github.com/temoto/alive/v2"
-	"github.com/temoto/vender/helpers"
-	"github.com/temoto/vender/log2"
-	vender_api "github.com/temoto/vender/tele"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"
 )
 

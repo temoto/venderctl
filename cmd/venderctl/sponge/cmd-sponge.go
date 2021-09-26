@@ -14,9 +14,9 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"github.com/AlexTransit/vender/helpers"
+	vender_api "github.com/AlexTransit/vender/tele"
 	"github.com/juju/errors"
-	"github.com/temoto/vender/helpers"
-	vender_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
 	tele_api "github.com/temoto/venderctl/internal/tele/api"

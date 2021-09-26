@@ -3,7 +3,7 @@ package state
 import (
 	"log"
 
-	"github.com/temoto/vender/log2"
+	"github.com/AlexTransit/vender/log2"
 )
 
 // TODO func (*log2.Log) Stdlib() *log.Logger

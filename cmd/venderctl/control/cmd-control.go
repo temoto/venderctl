@@ -10,8 +10,8 @@ import (
 
 	// "time"
 
+	vender_api "github.com/AlexTransit/vender/tele"
 	"github.com/juju/errors"
-	vender_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
 	//	tele_config "github.com/temoto/venderctl/internal/tele/config"
@@ -64,6 +64,7 @@ func controlMain(ctx context.Context, flags *flag.FlagSet) error {
 	case "report":
 		cmd := &vender_api.Command{
 			Executer:             0,
+			Lock:                 false,
 			Task:                 &vender_api.Command_Report{Report: &vender_api.Command_ArgReport{}},
 			XXX_NoUnkeyedLiteral: struct{}{},
 			XXX_unrecognized:     []byte{},

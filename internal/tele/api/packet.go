@@ -3,9 +3,9 @@ package tele_api
 import (
 	"fmt"
 
+	vender_api "github.com/AlexTransit/vender/tele"
 	"github.com/golang/protobuf/proto"
 	"github.com/juju/errors"
-	vender_api "github.com/temoto/vender/tele"
 )
 
 //go:generate go run golang.org/x/tools/cmd/stringer -type=PacketKind -trimprefix=Packet

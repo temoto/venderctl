@@ -10,8 +10,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/AlexTransit/vender/log2"
 	"github.com/juju/errors"
-	"github.com/temoto/vender/log2"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	cmd_control "github.com/temoto/venderctl/cmd/venderctl/control"
 	cmd_passwd "github.com/temoto/venderctl/cmd/venderctl/passwd"

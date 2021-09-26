@@ -1,3 +1,10 @@
+# github.com/AlexTransit/vender v0.210925.9-0.20210926052830-0483022f3a25
+## explicit; go 1.17
+github.com/AlexTransit/vender/currency
+github.com/AlexTransit/vender/helpers
+github.com/AlexTransit/vender/log2
+github.com/AlexTransit/vender/tele
+github.com/AlexTransit/vender/tele/config
 # github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f
 ## explicit
 github.com/coreos/go-systemd/daemon
@@ -63,13 +70,6 @@ github.com/temoto/alive/v2
 ## explicit; go 1.11
 github.com/temoto/ru-nalog-go
 github.com/temoto/ru-nalog-go/umka
-# github.com/temoto/vender v0.210504.1-0.20210704094029-968f6a03f7fe => /home/alexm/vender
-## explicit; go 1.16
-github.com/temoto/vender/currency
-github.com/temoto/vender/helpers
-github.com/temoto/vender/log2
-github.com/temoto/vender/tele
-github.com/temoto/vender/tele/config
 # github.com/vmihailenco/tagparser v0.1.0
 ## explicit; go 1.13
 github.com/vmihailenco/tagparser
@@ -145,4 +145,3 @@ gopkg.in/yaml.v2
 # mellium.im/sasl v0.2.1
 ## explicit
 mellium.im/sasl
-# github.com/temoto/vender => /home/alexm/vender

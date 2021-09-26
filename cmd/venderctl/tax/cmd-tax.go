@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
+	vender_api "github.com/AlexTransit/vender/tele"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/go-pg/pg/v9"
 	"github.com/juju/errors"
-	vender_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/cmd/internal/cli"
 	"github.com/temoto/venderctl/internal/state"
 	// tele_config "github.com/temoto/venderctl/internal/tele/config"

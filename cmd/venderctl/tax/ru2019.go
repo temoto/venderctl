@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"time"
 
+	vender_api "github.com/AlexTransit/vender/tele"
 	"github.com/go-pg/pg/v9"
 	"github.com/juju/errors"
 	ru_nalog "github.com/temoto/ru-nalog-go"
 	"github.com/temoto/ru-nalog-go/umka"
-	vender_api "github.com/temoto/vender/tele"
 	"github.com/temoto/venderctl/internal/state"
 )
 
