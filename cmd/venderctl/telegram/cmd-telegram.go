@@ -39,13 +39,12 @@ type client struct {
 	Id      uint32
 	Balance int32
 	Credit  uint32
-	chatID  int64
 	vmid    int32
 	rcook   cookSrruct
 }
 
 type cookSrruct struct {
-	price uint32
+	// price uint32
 	code  string
 	sugar uint8
 	cream uint8
@@ -148,17 +147,19 @@ func (tb *tgbotapiot) onTeleBot(m tgbotapi.Update) error {
 }
 
 func (tb *tgbotapiot) sendCookCmd(chatId int64) error {
-	client := tb.chatId[chatId]
+	cl := tb.chatId[chatId]
 	cmd := &vender_api.Command{
-		Executer:             uint64(chatId),
-		Lock:                 false,
-		Task:                 &vender_api.Command_Cook{Cook: &vender_api.Command_ArgCook{Menucode: client.rcook.code, Cream: []byte{client.rcook.cream}, Sugar: []byte{client.rcook.sugar}}},
-		XXX_NoUnkeyedLiteral: struct{}{},
-		XXX_unrecognized:     []byte{},
-		XXX_sizecache:        0,
+		Executer: chatId,
+		Lock:     false,
+		Task: &vender_api.Command_Cook{
+			Cook: &vender_api.Command_ArgCook{
+				Menucode: cl.rcook.code,
+				Cream:    []byte{cl.rcook.cream},
+				Sugar:    []byte{cl.rcook.sugar},
+			}},
 	}
-	tb.g.Log.Infof("client id:%d send remoite cook code:%s", client.Id, client.rcook.code)
-	return tb.g.Tele.SendCommand(client.vmid, cmd)
+	tb.g.Log.Infof("client id:%d send remoite cook code:%s", cl.Id, cl.rcook.code)
+	return tb.g.Tele.SendCommand(cl.vmid, cmd)
 }
 
 func (tb *tgbotapiot) onMqtt(p tele_api.Packet) error {
