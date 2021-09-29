@@ -1,5 +1,5 @@
-github.com/AlexTransit/vender v0.210928.0 h1:uCAgLFON+/1m6koP9Z4/RBiEq6HS5OALQuIfES7dc/M=
-github.com/AlexTransit/vender v0.210928.0/go.mod h1:RNHbytATAWWhxGLr1zPclk1ZluGDLA6vyzbrciPRwhY=
+github.com/AlexTransit/vender v0.210929.1 h1:ofEiayfcJItTNkdv+nkeZYyttZXZMVUtdGLwZTmQh/Y=
+github.com/AlexTransit/vender v0.210929.1/go.mod h1:RNHbytATAWWhxGLr1zPclk1ZluGDLA6vyzbrciPRwhY=
 github.com/c-bata/go-prompt v0.2.3/go.mod h1:VzqtzE2ksDBcdln8G7mk2RX9QyGjH+OVqOCSiVIqS34=
 github.com/coreos/go-systemd v0.0.0-20190212144455-93d5ec2c7f76/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f h1:JOrtw2xFKzlg+cbHpyrpLDmnN1HqhBfnX7WDiW7eG2c=

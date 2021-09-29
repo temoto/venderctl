@@ -1,4 +1,4 @@
-# github.com/AlexTransit/vender v0.210928.0
+# github.com/AlexTransit/vender v0.210929.1
 ## explicit; go 1.17
 github.com/AlexTransit/vender/currency
 github.com/AlexTransit/vender/helpers

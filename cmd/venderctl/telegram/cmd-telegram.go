@@ -214,7 +214,7 @@ func (tb *tgbotapiot) cookResponse(rm *vender_api.Response) error {
 	case vender_api.CookReplay_cookError:
 		msg = "ошибка приготовления."
 	default:
-		msg = "что то пошло не так. без паники. хозяин уже в курсе."
+		msg = "что то пошло не так. без паники. хозяину уже в сообщили."
 		TgSendError(fmt.Sprintf("vmid=%d code error invalid packet=%s", tb.chatId[rm.Executer].vmid, rm.String()))
 	}
 	return tb.tgSend(int64(rm.Executer), msg)
