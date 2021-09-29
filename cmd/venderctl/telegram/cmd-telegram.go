@@ -31,13 +31,14 @@ var tb = new(tgbotapiot)
 type tgbotapiot struct {
 	bot          *tgbotapi.BotAPI
 	updateConfig tgbotapi.UpdateConfig
+	admin        int64
 	g            *state.Global
 	chatId       map[int64]client
 }
 
 type client struct {
 	Id      uint32
-	Balance int32
+	Balance uint32
 	Credit  uint32
 	vmid    int32
 	rcook   cookSrruct
@@ -90,6 +91,7 @@ func telegramInit(ctx context.Context) error {
 
 	tb.bot.Debug = true
 	tb.chatId = make(map[int64]client)
+	tb.admin = tb.g.Config.Telegram.TelegramAdmin
 
 	// log.Printf("Authorized on account '%s'", tb.bot.Self.UserName)
 
@@ -119,6 +121,7 @@ func (tb *tgbotapiot) telegramLoop() error {
 
 		case tgm := <-tgch:
 			if tgm.Message == nil {
+				fmt.Printf("\n\033[41m (%v) \033[0m\n\n", tgm.EditedMessage)
 				break
 			}
 			err := tb.onTeleBot(tgm)
@@ -130,7 +133,6 @@ func (tb *tgbotapiot) telegramLoop() error {
 		}
 	}
 }
-
 func (tb *tgbotapiot) onTeleBot(m tgbotapi.Update) error {
 	cl, err := tb.getClient(m.Message.From.ID)
 	if err != nil {
@@ -153,12 +155,14 @@ func (tb *tgbotapiot) sendCookCmd(chatId int64) error {
 		Lock:     false,
 		Task: &vender_api.Command_Cook{
 			Cook: &vender_api.Command_ArgCook{
-				Menucode: cl.rcook.code,
-				Cream:    []byte{cl.rcook.cream},
-				Sugar:    []byte{cl.rcook.sugar},
+				Menucode:      cl.rcook.code,
+				Cream:         []byte{cl.rcook.cream},
+				Sugar:         []byte{cl.rcook.sugar},
+				Balance:       cl.Credit + cl.Balance,
+				PaymentMethod: vender_api.PaymentMethod_Balance,
 			}},
 	}
-	tb.g.Log.Infof("client id:%d send remoite cook code:%s", cl.Id, cl.rcook.code)
+	tb.g.Log.Infof("client id:%d send remote cook code:%s", cl.Id, cl.rcook.code)
 	return tb.g.Tele.SendCommand(cl.vmid, cmd)
 }
 
@@ -180,32 +184,25 @@ func (tb *tgbotapiot) onMqtt(p tele_api.Packet) error {
 		}
 		r.State = s
 	case tele_api.PacketCommandReply:
-		rm, err := p.CommandResponse()
-		cm := rm.CookReplay
-
+		rm, _ := p.CommandResponse()
 		if rm.CookReplay > 0 {
-			tb.cookResponse(rm)
-			tb.g.Log.Errorf("tele command parse rm%v aa(%v) err=%v", rm, cm, err)
-
+			if err := tb.cookResponse(rm); err != nil {
+				return err
+			}
 		}
-
-		// if err != nil {
-		// }
-		// return tgResponseMessage(ctx, 0, *rm)
 		return nil
 
 	default:
-		// return errors.Errorf("code error invalid packet=%s", p)
+		// TgSendError(fmt.Sprintf("code error invalid packet=%s", p.Kind.String()))
 		return nil
 	}
-	// g.Vmc[vmcid] = r
 	return nil
 }
-func (tb *tgbotapiot) cookResponse(rm *vender_api.Response) {
+func (tb *tgbotapiot) cookResponse(rm *vender_api.Response) error {
 	var msg string
 	switch rm.CookReplay {
 	case vender_api.CookReplay_vmcbusy:
-		msg = "автомат в данный момент обрабатывает дургой заказ. попробуйте позднее."
+		msg = "автомат в данный момент обрабатывает другой заказ. попробуйте позднее."
 	case vender_api.CookReplay_cookStart:
 		msg = "начинаю готовить"
 	case vender_api.CookReplay_cookFinish:
@@ -213,21 +210,29 @@ func (tb *tgbotapiot) cookResponse(rm *vender_api.Response) {
 	case vender_api.CookReplay_cookInaccessible:
 		msg = "код недоступен"
 	case vender_api.CookReplay_cookOverdraft:
-		msg = "недостаточно средств. поплните баланс и попробуйте снова."
+		msg = "недостаточно средств. пополните баланс и попробуйте снова."
 	case vender_api.CookReplay_cookError:
+		msg = "ошибка приготовления."
 	default:
 		msg = "что то пошло не так. без паники. хозяин уже в курсе."
-		tb.g.Log.Errorf("tele remote cooke rror. unknow response (%v)", rm.String())
+		TgSendError(fmt.Sprintf("vmid=%d code error invalid packet=%s", tb.chatId[rm.Executer].vmid, rm.String()))
 	}
-	tb.tgSend(int64(rm.Executer), msg)
+	return tb.tgSend(int64(rm.Executer), msg)
 }
 
-func (tb *tgbotapiot) tgSend(chatid int64, s string) {
+func TgSendError(s string) {
+	if tb.admin > 0 {
+		_ = tb.tgSend(int64(tb.admin), s)
+		tb.g.Log.Error(s)
+	}
+}
+
+func (tb *tgbotapiot) tgSend(chatid int64, s string) error {
 	msg := tgbotapi.NewMessage(chatid, s)
 	// msg.ReplyToMessageID = t.replayMessageID
-	m, err := tb.bot.Send(msg)
-	fmt.Printf("\n\033[41m %v %v \033[0m\n\n", m, err)
+	_, err := tb.bot.Send(msg)
 	// return m.Date, err
+	return err
 }
 
 func (tb *tgbotapiot) getClient(c int64) (client, error) {

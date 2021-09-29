@@ -42,6 +42,7 @@ type Config struct {
 	}
 	Telegram struct {
 		TelegrammBotApi string `hcl:"telegram_bot_api"`
+		TelegramAdmin   int64  `hcl:"telegram_admin"`
 	}
 	Tele tele_config.Config
 
