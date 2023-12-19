@@ -1,0 +1,10 @@
+*.dll
+*.dylib
+*.exe
+*.exe~
+*.out
+*.so
+*.test
+*.tmp.docx
+*.tmp.tsv
+venv/
