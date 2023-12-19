@@ -16,7 +16,7 @@ require (
 	github.com/temoto/ru-nalog-go v0.6.1-0.20200126230605-d6d5bfc79675
 	github.com/temoto/vender v0.200301.0
 	github.com/vmihailenco/tagparser v0.1.2 // indirect
-	golang.org/x/crypto v0.5.0 // indirect
+	golang.org/x/crypto v0.17.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.26.0-rc.1 // indirect
 	gopkg.in/hlandau/easymetric.v1 v1.0.0 // indirect
